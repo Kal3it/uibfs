@@ -1,0 +1,1 @@
+- disco.imagen tiene 100,000 de bloques.
