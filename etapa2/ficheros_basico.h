@@ -1,4 +1,5 @@
 #include <time.h>
+#include <limits.h>
 #include "../etapa1/bloques.h"
 
 #define posSB 0 //el superbloque se escribe en el primer bloque de nuestro FS
@@ -43,7 +44,7 @@ typedef union _inodo{
         */
         // Hay que restar también lo que ocupen las variables de alineación utilizadas!!!
     };
-    char padding[128];
+    char padding[T_INODO];
 } inodo_t;
 
 /**

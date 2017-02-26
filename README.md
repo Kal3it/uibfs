@@ -1,1 +1,2 @@
 - disco.imagen tiene 100,000 de bloques.
+- BLOCKSIZE / T_INODO representa los INODOS que caben en el BLOQUE como máximo

@@ -14,20 +14,20 @@ int main(int argc, char const *argv[])
 	}
 
     unsigned int nbloques = atoi(argv[2]);
-    unsigned char *buf;
+    unsigned char *buf = (unsigned char*)malloc(BLOCKSIZE);
+	memset(buf,0,BLOCKSIZE);
 
 	bmount(argv[1]);
 
-	buf=(unsigned char*)malloc(BLOCKSIZE);
-	memset(buf,0,BLOCKSIZE);
 	for (int i = 0; i < nbloques; ++i)
 	{
 		bwrite(i,buf);
 	}
 
-    initSB(nbloques, nbloques/4);
+	unsigned int ninodos = nbloques/4;
+    initSB(nbloques, ninodos);
     initMB(nbloques);
-    initAI(nbloques/4);
+    initAI(ninodos);
 
 	bumount();
 
