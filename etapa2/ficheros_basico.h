@@ -61,7 +61,7 @@ int tamMB (unsigned int nbloques);
 int tamAI (unsigned int ninodos);
 
 /**
- *
+ * Inicia los atributos del superbloque.
  * @param nbloques Número de bloques total
  * @param ninodos Número de inodos total
  * @return
@@ -69,14 +69,14 @@ int tamAI (unsigned int ninodos);
 int initSB(unsigned int nbloques, unsigned int ninodos);
 
 /**
- *
+ * Inicia los atributos del mapa de bits.
  * @param nbloques
  * @return
  */
 int initMB(unsigned int nbloques);
 
 /**
- *
+ * Inicia el array de inodos creando inodos libres.
  * @param ninodos
  * @return
  */

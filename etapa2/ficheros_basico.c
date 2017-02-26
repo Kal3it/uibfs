@@ -3,12 +3,14 @@
 struct superbloque * sb; // TODO: FALTA HACER EL FREE EN ALGUNA PARTE
 
 int tamMB (unsigned int nbloques){
-    // Cuantos bits necesitamos para representar los bloques?
-    // 1 bloque -> 1 bit
-    // nbloques/8 -> bytes para representar todos los bloques
-    // cantidad de bytes / el tamaño en bytes de cada bloque -> numero de bloques!!
-    // si la cantidad de bytes no es un multiplo del tamaño en bytes de cada bloque,
-    // hay que reservar un bloque mas (que se quedará con una parte sin usar)
+    /**
+     * Cuantos bits necesitamos para representar los bloques?
+     * 1 bloque -> 1 bit
+     * nbloques/8 -> bytes para representar todos los bloques
+     * cantidad de bytes / el tamaño en bytes de cada bloque -> numero de bloques!!
+     * si la cantidad de bytes no es un multiplo del tamaño en bytes de cada bloque,
+     * hay que reservar un bloque mas (que se quedará con una parte sin usar)
+     */
 	return ((nbloques / 8) % BLOCKSIZE) ? ((nbloques / 8) / BLOCKSIZE) + 1 : ((nbloques / 8) / BLOCKSIZE);
 }
 
@@ -64,6 +66,7 @@ int initMB(unsigned int nbloques) {
     unsigned char * buf=malloc(BLOCKSIZE);
     memset(buf,0,BLOCKSIZE);
 
+    // Los bloques del mapa de bits se limpian con 0s
     for (int i = sb->posPrimerBloqueMB; i < sb->posUltimoBloqueMB; ++i) {
         if(bwrite(i, buf) == -1){
             return -1;
@@ -93,7 +96,7 @@ int initAI(unsigned int ninodos) {
                 inodosEnBloque = (inodosRestantes >= maxInodosEnBloque) ? maxInodosEnBloque : inodosRestantes;
 
         inodo_t inodos[inodosEnBloque];
-        //memset(inodos, 0, size * T_INODO); // TODO: Conseguir que el array almacene todo 0s?
+        //memset(inodos, 0, size * T_INODO); // TODO: Conseguir que el espacio sin ocupar del array almacene todo 0s?
 
         for (int j = sb->posPrimerInodoLibre; j < inodosEnBloque; ++j) {
 
@@ -110,7 +113,6 @@ int initAI(unsigned int ninodos) {
             inodos[j].punterosDirectos[0] = (countInodo < sb->totInodos-1) ? countInodo + 1 : UINT_MAX ;
             ++countInodo;
         }
-
 
         if(bwrite(i, inodos) == -1){
             return -1;

@@ -7,12 +7,13 @@
 #include "etapa2/ficheros_basico.h"
 
 int main(int argc, char const *argv[]) {
+    
     if (argc != 2) {
         puts("Uso: leer_sf <nombre_dispositivo>");
         return -1;
     }
 
-    struct superbloque *sb = malloc(sizeof(struct superbloque));
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
 
     bmount(argv[1]);
 
@@ -69,6 +70,8 @@ int main(int argc, char const *argv[]) {
 //    printf("Puntero directo %d del inodo %d: %u\n",0,0,inodos[0].punterosDirectos[0]);
 
     if(bumount() == -1) return -1;
+
+    free(sb);
 
     return 0;
 }
