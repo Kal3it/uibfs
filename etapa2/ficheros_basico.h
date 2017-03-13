@@ -81,3 +81,23 @@ int initMB(unsigned int nbloques);
  * @return
  */
 int initAI(unsigned int ninodos);
+
+/**
+ * Escribe el valor $bit en la posición correspondiente del bloque $nbloque en el mapa de bits.
+ * @param nbloque
+ * @param bit
+ * @return
+ */
+int escribit_bit(unsigned int nbloque, unsigned int bit);
+
+unsigned char leer_bit(unsigned int nbloque);
+
+int reservar_bloque();
+
+int liberar_bloque(unsigned int nbloque);
+
+//int escribir_inodo(struct inodo inodo, unsigned int ninodo);
+//
+//int leer_inodo(unsigned int ninodo, struct inodo *inodo);
+//
+//int reservar_inodo(unsigned char tipo, unsigned char permisos);

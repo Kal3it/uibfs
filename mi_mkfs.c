@@ -17,19 +17,31 @@ int main(int argc, char const *argv[])
     unsigned char *buf = (unsigned char*)malloc(BLOCKSIZE);
 	memset(buf,0,BLOCKSIZE);
 
-	bmount(argv[1]);
+    if(bmount(argv[1]) == -1){
+        return -1;
+    }
 
 	for (int i = 0; i < nbloques; ++i)
 	{
-		bwrite(i,buf);
+		if(bwrite(i,buf) == -1){
+            return -1;
+        }
 	}
 
 	unsigned int ninodos = nbloques/4;
-    initSB(nbloques, ninodos);
-    initMB(nbloques);
-    initAI(ninodos);
+    if(initSB(nbloques, ninodos) == -1){
+        return -1;
+    }
+    if(initMB(nbloques) == -1){
+        return -1;
+    }
+    if(initAI(ninodos) == -1){
+        return -1;
+    }
 
-	bumount();
+	if(bumount() == -1){
+        return -1;
+    }
 
     free(buf);
 

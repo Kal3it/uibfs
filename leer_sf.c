@@ -7,7 +7,7 @@
 #include "etapa2/ficheros_basico.h"
 
 int main(int argc, char const *argv[]) {
-    
+
     if (argc != 2) {
         puts("Uso: leer_sf <nombre_dispositivo>");
         return -1;
@@ -37,25 +37,25 @@ int main(int argc, char const *argv[]) {
     printf("Sizeof inodo: %lu\n", sizeof(inodo_t));
 
     // Recorrido de los inodos libres
-    inodo_t inodos[BLOCKSIZE / T_INODO];
+//    inodo_t inodos[BLOCKSIZE / T_INODO];
+//
+//    unsigned int
+//            nextBloque = sb->posPrimerBloqueAI,
+//            currBloque,
+//            nextInodo = 0;
+//
+//    if(bread(nextBloque, &inodos) == -1) return -1;
 
-    unsigned int
-            nextBloque = sb->posPrimerBloqueAI,
-            currBloque,
-            nextInodo = 0;
-
-    if(bread(nextBloque, &inodos) == -1) return -1;
-
-    while (inodos[nextInodo].punterosDirectos[0] != UINT_MAX) {
-        printf("El inodo %u del bloque %u apunta al inodo %u\n", nextInodo, nextBloque,inodos[nextInodo].punterosDirectos[0]);
-
-        currBloque = nextBloque;
-        nextBloque = (sb->posPrimerBloqueAI) + (inodos[nextInodo].punterosDirectos[0] / (BLOCKSIZE / T_INODO));
-        nextInodo = inodos[nextInodo].punterosDirectos[0] % (BLOCKSIZE / T_INODO);
-        if(currBloque < nextBloque) if(bread(nextBloque, &inodos) == -1) return -1; // Solo leemos el bloque si es diferente al anterior, para optimizar
-    }
-
-    printf("El inodo %u del bloque %u no apunta a nada (valor UINT_MAX = %u)\n", nextInodo, nextBloque,inodos[nextInodo].punterosDirectos[0]);
+//    while (inodos[nextInodo].punterosDirectos[0] != UINT_MAX) {
+//        printf("El inodo %u del bloque %u apunta al inodo %u\n", nextInodo, nextBloque,inodos[nextInodo].punterosDirectos[0]);
+//
+//        currBloque = nextBloque;
+//        nextBloque = (sb->posPrimerBloqueAI) + (inodos[nextInodo].punterosDirectos[0] / (BLOCKSIZE / T_INODO));
+//        nextInodo = inodos[nextInodo].punterosDirectos[0] % (BLOCKSIZE / T_INODO);
+//        if(currBloque < nextBloque) if(bread(nextBloque, &inodos) == -1) return -1; // Solo leemos el bloque si es diferente al anterior, para optimizar
+//    }
+//
+//    printf("El inodo %u del bloque %u no apunta a nada (valor UINT_MAX = %u)\n", nextInodo, nextBloque,inodos[nextInodo].punterosDirectos[0]);
 
 //    puts("");
 //    printf("Informacion del inodo %d\n",0);

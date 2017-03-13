@@ -25,3 +25,5 @@ leer_sf: leer_sf.o $(LIBRARIES) $(INCLUDES)
 .PHONY: clean
 clean:
 	rm -rf *.o *~ $(PROGRAMS)
+	rm -rf etapa1/*.o
+	rm -rf etapa2/*.o
