@@ -3,7 +3,7 @@
 #include "../etapa1/bloques.h"
 
 #define posSB 0 //el superbloque se escribe en el primer bloque de nuestro FS
-#define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(struct inodo_t))
+#define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(inodo_t))
 
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits
@@ -90,14 +90,28 @@ int initAI(unsigned int ninodos);
  */
 int escribit_bit(unsigned int nbloque, unsigned int bit);
 
+/**
+ * Devuelve el valor del bit del mapa de bits correspondiente al bloque $nbloque.
+ * @param nbloque
+ * @return
+ */
 unsigned char leer_bit(unsigned int nbloque);
 
+/**
+ * Marca como ocupado el primer bloque no ocupado.
+ * @return
+ */
 int reservar_bloque();
 
+/**
+ * Marca como no ocupado el bloque $nbloque
+ * @param nbloque
+ * @return
+ */
 int liberar_bloque(unsigned int nbloque);
 
-//int escribir_inodo(struct inodo inodo, unsigned int ninodo);
-//
-//int leer_inodo(unsigned int ninodo, struct inodo *inodo);
-//
-//int reservar_inodo(unsigned char tipo, unsigned char permisos);
+int escribir_inodo(inodo_t inodo, unsigned int ninodo);
+
+int leer_inodo(unsigned int ninodo, inodo_t * inodo);
+
+int reservar_inodo(unsigned char tipo, unsigned char permisos);

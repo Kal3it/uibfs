@@ -1,7 +1,5 @@
 #include "ficheros_basico.h"
 
-struct superbloque * sb; // TODO: FALTA HACER EL FREE EN ALGUNA PARTE
-
 int tamMB (unsigned int nbloques){
     /**
      * Cuantos bits necesitamos para representar los bloques?
@@ -31,7 +29,7 @@ int tamAI (unsigned int ninodos){
 
 int initSB(unsigned int nbloques, unsigned int ninodos){
 
-    sb = malloc(sizeof(struct superbloque));
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
 
     /**
      * Hay que tener en cuenta que los valores sb->posUltima* representan el bloque posterior al ultimo bloque asociado.
@@ -56,21 +54,23 @@ int initSB(unsigned int nbloques, unsigned int ninodos){
     sb->totBloques = nbloques;
     sb->totInodos = ninodos;
 
-    int status = bwrite(posSB, sb);
+    if(bwrite(posSB,sb) == -1){
+        return -1;
+    }
 
-    //free(sb); //todo: como gestionarlo?
+    free(sb);
 
-    return status;
+    return 0;
 }
 
 int initMB(unsigned int nbloques) {
-    sb = malloc(sizeof(struct superbloque));
+    struct superbloque * sb = malloc(sizeof(struct superbloque)); // TODO: Se puede optimizar?
     unsigned char * buf=malloc(BLOCKSIZE);
     memset(buf,0,BLOCKSIZE);
 
     if(bread(posSB,sb) == -1){
         return -1;
-    } // todo: lo mismo que antes, se puede optimizar
+    }
 
     // Los bloques del mapa de bits se limpian con 0s
     for (int i = sb->posPrimerBloqueMB; i < sb->posUltimoBloqueMB; ++i) {
@@ -90,20 +90,20 @@ int initMB(unsigned int nbloques) {
         escribit_bit(i,1);
     }
 
-    //free(sb); todo: fallo
+    free(sb);
     free(buf);
 
     return 0;
 }
 
 int initAI(unsigned int ninodos) {
-    sb = malloc(sizeof(struct superbloque));
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
     unsigned int countInodo = 0;
 	unsigned int maxInodosEnBloque = BLOCKSIZE / T_INODO;
 
     if(bread(posSB,sb) == -1){
         return -1;
-    } // todo: lo mismo que antes, se puede optimizar
+    }
 
 //    if(sizeof(inodo_t) != 128){
 //        puts("Problemas de alineacion de estructuras.");
@@ -128,7 +128,7 @@ int initAI(unsigned int ninodos) {
             inodos[j].ctime = time(NULL);
             inodos[j].nlinks = 0;
             inodos[j].numBloquesOcupados = 0;
-            inodos[j].permisos = 0xFF;
+            inodos[j].permisos = 7;
             inodos[j].tamEnBytesLog = 0;
 
             // Si no es el ultimo, apunta al siguiente. Si es el ultimo, no apunta a nada.
@@ -142,13 +142,13 @@ int initAI(unsigned int ninodos) {
     }
 
     //free(inodos); TODO: refactorizar para que inodos sea visible desde la funcion
-    //free(sb); todo: fallo
+    free(sb);
 
 	return 0;
 }
 
 int escribit_bit(unsigned int nbloque, unsigned int bit){
-    sb = malloc(sizeof(struct superbloque)); // todo: necesario cargar sb cada vez? se puede optimizar!!
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
     unsigned char * bufferMB = malloc(BLOCKSIZE);
     unsigned char mascara = 128; // 10000000
 
@@ -199,19 +199,19 @@ int escribit_bit(unsigned int nbloque, unsigned int bit){
     }
 
     free(bufferMB);
-    //free(sb); todo: fallo
+    free(sb);
 
     return 0;
 }
 
 unsigned char leer_bit(unsigned int nbloque){
-    sb = malloc(sizeof(struct superbloque));
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
     unsigned char * bufferMB = malloc(BLOCKSIZE);
     unsigned char mascara = 128; // 10000000
 
     if(bread(posSB,sb) == -1){
         return -1;
-    }  // todo: lo mismo que antes, se puede optimizar
+    }
 
     // Operaciones para localizar el bit, byte y bloque
     unsigned int bitAbsoluto = nbloque;
@@ -229,20 +229,20 @@ unsigned char leer_bit(unsigned int nbloque){
     mascara &= bufferMB[byteRelativo]; // operador AND para bits
     mascara >>= (7-bitRelativo); // desplazamiento de bits a la derecha
 
-    //free(sb); todo: fallo
+    free(sb);
     free(bufferMB);
 
     return mascara;
 }
 
 int reservar_bloque(){
-    sb = malloc(sizeof(struct superbloque));
+    struct superbloque * sb = malloc(sizeof(struct superbloque * ));
     unsigned char * bufferMB = malloc(BLOCKSIZE);
     unsigned char * bufferAux = malloc(BLOCKSIZE);
 
     if(bread(posSB,sb) == -1){
         return -1;
-    } // todo: lo mismo que antes, se puede optimizar
+    }
 
     if(sb->cantBloquesLibres == 0){
         fprintf(stderr,"No quedan bloques libres\n");
@@ -293,7 +293,7 @@ int reservar_bloque(){
         return -1;
     }
 
-    //free(sb); todo: fallo
+    free(sb);
     free(bufferMB);
     free(bufferAux);
 
@@ -301,11 +301,11 @@ int reservar_bloque(){
 }
 
 int liberar_bloque(unsigned int nbloque){
-    sb = malloc(sizeof(struct superbloque));
+    struct superbloque *  sb = malloc(sizeof(struct superbloque));
 
     if(bread(posSB,sb) == -1){
         return -1;
-    } // todo: lo mismo que antes, se puede optimizar
+    }
 
     if(escribit_bit(nbloque,0) == -1){
         return -1;
@@ -316,41 +316,113 @@ int liberar_bloque(unsigned int nbloque){
         return -1;
     }
 
-    //free(sb) todo: fallo
+    free(sb);
 
     return nbloque;
 }
 
-//int  escribir_inodo(struct inodo *inodo,unsigned int ninodo){
-//
-//    unsigned struct inodo bufferAI[BLOCKSIZE/TAM_INODO];
-//    // Cuantos numero de bloque se guardan en 1 bloque del MB? 1024*8 = BLOCKSIZE * 8
-//    unsigned int bloqueAI =(ninodo/BLOCKSIZE)+sb->posPrimerBloqueAI;
-//    if(bread(bloqueAI,bufferAI)==-1){
-//        return -1;
-//    }
-//    bufferAI[ninodo%(BLOCKSIZE/TAM_INODO)]=inodo;
-//    bwrite(bloqueAI,bufferAI);
-//
-//}
-//
-//int struct inodo leer_inodo(unsigned int ninodo, struct inodo *inodo){
-//
-//    unsigned int bloqueAI =(ninodo/BLOCKSIZE)+sb->posPrimerBloqueAI;
-//    unsigned inodo bufferAI[BLOCKSIZE/TAM_INODO];
-//    if(bread(bloqueAI,bufferAI)==-1){
-//        return -1;
-//    }
-//    inodo = bufferAI[ninodo%(BLOCKSIZE/TAM_INODO)];
-//    return inodo;
-//
-//}
-//
-//int reservar_inodo(unsigned char tipo, unsigned char permisos){
-//
-//    if (sb->cantInodosLibres == 0){
-//        return -1;
-//    }
-//
-//
-// }
+int escribir_inodo(inodo_t inodo,unsigned int ninodo){
+    const unsigned int INODOS_EN_BLOQUE = BLOCKSIZE/T_INODO;
+
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
+    inodo_t * bufferAI = malloc(INODOS_EN_BLOQUE * sizeof(inodo_t));
+    unsigned int nbloqueAI;
+
+    if(bread(posSB,sb) == -1){
+        return -1;
+    }
+
+    nbloqueAI = sb->posPrimerBloqueAI + ninodo/INODOS_EN_BLOQUE;
+
+    if(bread(nbloqueAI,bufferAI) == -1){
+        return -1;
+    }
+
+    bufferAI[ninodo%INODOS_EN_BLOQUE] = inodo;
+
+    if(bwrite(nbloqueAI,bufferAI) == -1){
+        return -1;
+    }
+
+    free(sb);
+    free(bufferAI);
+
+    return 0;
+}
+
+int leer_inodo(unsigned int ninodo, inodo_t * inodo){
+    const unsigned int INODOS_EN_BLOQUE = BLOCKSIZE/T_INODO;
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
+    unsigned int nbloqueAI;
+    inodo_t bufferAI[INODOS_EN_BLOQUE];
+
+    if(bread(posSB,sb) == -1){
+        return -1;
+    }
+
+    nbloqueAI = sb->posPrimerBloqueAI + ninodo/INODOS_EN_BLOQUE;
+
+    if(bread(nbloqueAI,bufferAI) == -1){
+        return -1;
+    }
+
+    *inodo = bufferAI[ninodo%INODOS_EN_BLOQUE]; //todo: Correcto?
+
+    free(sb);
+    //free(bufferAI); // TODO: Hay que hacer free a todo menos al sitio donde apunta inodo!!
+
+    return 0;
+}
+
+int reservar_inodo(unsigned char tipo, unsigned char permisos){
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
+    inodo_t inodo, inodoLibre;
+
+    if(bread(posSB,sb) == -1){
+        return -1;
+    }
+
+    if(sb->cantInodosLibres == 0){
+        fprintf(stderr,"No quedan inodos libres.");
+        return -1;
+    }
+
+    // Inicializamos el nuevo inodo
+    unsigned int t = time(NULL);
+    inodo.tipo = tipo;
+    inodo.permisos = permisos;
+    inodo.nlinks = 1;
+    inodo.tamEnBytesLog = 0;
+    inodo.atime = t;
+    inodo.mtime = t;
+    inodo.ctime = t;
+    inodo.numBloquesOcupados = 0;
+    for (int i = 0; i < 12; ++i) {
+        inodo.punterosDirectos[i] = 0;
+    }
+    for (int j = 0; j < 3; ++j) {
+        inodo.punterosIndirectos[j] = 0;
+    }
+
+    unsigned int posNuevoInodo = sb->posPrimerInodoLibre;
+
+    // Actualizamos el primer inodo libre
+    if(leer_inodo(sb->posPrimerInodoLibre,&inodoLibre) == -1){
+        return -1;
+    }
+    sb->posPrimerInodoLibre = inodoLibre.punterosDirectos[0];
+
+    // Guardamos el nuevo inodo
+    if(escribir_inodo(inodo,posNuevoInodo) == -1){
+        return -1;
+    }
+
+    if(bwrite(posSB, sb) == -1){ // Guardamos la posicion del primer inodo libre actualizada
+        return -1;
+    }
+
+    free(sb);
+
+    return posNuevoInodo;
+
+ }

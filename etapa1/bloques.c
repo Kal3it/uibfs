@@ -37,5 +37,9 @@ int bread(unsigned int nbloque,void *buf){
 		return -1;
 	}
 	int t=read(descriptor,buf,BLOCKSIZE);
-	return t;
+	if(t == -1){
+		fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
+		return -1;
+	}
+	return 0;
 }

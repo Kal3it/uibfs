@@ -69,7 +69,9 @@ int main(int argc, char const *argv[]) {
 //    printf("Numero de bloques ocupados del inodo %d: %u\n",0,inodos[0].tamEnBytesLog);
 //    printf("Puntero directo %d del inodo %d: %u\n",0,0,inodos[0].punterosDirectos[0]);
 
-    if(bumount() == -1) return -1;
+    if(bumount() == -1){
+        return -1;
+    }
 
     free(sb);
 
