@@ -236,7 +236,7 @@ unsigned char leer_bit(unsigned int nbloque){
 }
 
 int reservar_bloque(){
-    struct superbloque * sb = malloc(sizeof(struct superbloque * ));
+    struct superbloque * sb = malloc(sizeof(struct superbloque));
     unsigned char * bufferMB = malloc(BLOCKSIZE);
     unsigned char * bufferAux = malloc(BLOCKSIZE);
 
@@ -273,10 +273,6 @@ int reservar_bloque(){
     --(sb->cantBloquesLibres);
     unsigned int nbloque = ((posbloque - sb->posPrimerBloqueMB) * BLOCKSIZE) + (posbyte * 8) + posbit;
 
-    // todo: debbugging
-//    printf("El primer bit a cero esta en la posicion %d del byte %d del bloque %d\n",posbit,posbyte,posbloque);
-//    printf("El bloque libre es el %u\n",nbloque);
-
     // Actualizamos SB
     if(bwrite(posSB,sb) == -1){
         return -1;
@@ -293,6 +289,10 @@ int reservar_bloque(){
         return -1;
     }
 
+//    // todo: debbugging
+//    printf("El primer bit a cero esta en la posicion %d del byte %d del bloque %d\n",posbit,posbyte,posbloque);
+//    printf("El bloque libre es el %u\n",nbloque);
+//
     free(sb);
     free(bufferMB);
     free(bufferAux);
