@@ -39,6 +39,11 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
+    // Creacion del directorio raiz. Se reserva el inodo 0.
+    if(reservar_inodo('d',7) == -1){
+        return -1;
+    }
+
 	if(bumount() == -1){
         return -1;
     }

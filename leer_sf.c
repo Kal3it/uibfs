@@ -20,7 +20,7 @@ int main(int argc, char const *argv[]) {
     // Leer superbloque
     if(bread(posSB, sb) == -1) return -1;
 
-    puts("Informacion del Superbloque:");
+    puts("INFORMACION DEL SUPERBLOQUE");
     printf("Primer bloque MB: %d\n",sb->posPrimerBloqueMB);
     printf("Ultimo bloque MB: %d\n",sb->posUltimoBloqueMB);
     printf("Primer bloque AI: %d\n",sb->posPrimerBloqueAI);
@@ -35,6 +35,7 @@ int main(int argc, char const *argv[]) {
     printf("Inodos totales: %d\n",sb->totInodos);
     printf("Sizeof superbloque: %lu\n", sizeof(struct superbloque));
     printf("Sizeof inodo: %lu\n", sizeof(inodo_t));
+    puts("");
 
     // Recorrido de los inodos libres
 //    inodo_t inodos[BLOCKSIZE / T_INODO];
@@ -68,6 +69,32 @@ int main(int argc, char const *argv[]) {
 //    printf("tamEnBytesLog del inodo %u: %o\n",0,inodos[0].tamEnBytesLog);
 //    printf("Numero de bloques ocupados del inodo %d: %u\n",0,inodos[0].tamEnBytesLog);
 //    printf("Puntero directo %d del inodo %d: %u\n",0,0,inodos[0].punterosDirectos[0]);
+
+    inodo_t inodoRaiz;
+    if(leer_inodo(0,&inodoRaiz) == -1){
+        return -1;
+    }
+
+	puts("DATOS DEL DIRECTORIO RAIZ");
+	printf("Tipo: %c\n",inodoRaiz.tipo);
+	printf("Permisos: %u\n",inodoRaiz.permisos);
+	printf("atime: %d\n",inodoRaiz.atime); // todo: imprimirlo en el formato correspondiente
+	printf("mtime: %d\n",inodoRaiz.mtime);
+	printf("ctime: %d\n",inodoRaiz.ctime);
+	printf("nlinks: %u\n",inodoRaiz.nlinks);
+	printf("tamEnBytesLog: %u\n",inodoRaiz.tamEnBytesLog);
+	printf("numBloquesOcupados: %u\n",inodoRaiz.numBloquesOcupados);
+    puts("");
+	
+	puts("MAPA DE BITS");
+	printf("posSB: %u\n",leer_bit(posSB));
+	printf("posPrimerBloqueMB: %u\n",leer_bit(sb->posPrimerBloqueMB));
+	printf("posUltimoBloqueMB: %u\n",leer_bit(sb->posUltimoBloqueMB));
+	printf("posPrimerBloqueAI: %u\n",leer_bit(sb->posPrimerBloqueAI));
+	printf("posUltimoBloqueAI: %u\n",leer_bit(sb->posUltimoBloqueAI));
+	printf("posPrimerBloqueDatos: %u\n",leer_bit(sb->posPrimerBloqueDatos));
+	printf("posUltimoBloqueDatos: %u\n",leer_bit(sb->posUltimoBloqueDatos));
+    puts("");
 
     if(bumount() == -1){
         return -1;

@@ -13,7 +13,7 @@ int tamMB (unsigned int nbloques){
 }
 
 int tamAI (unsigned int ninodos){
-    /* No existe la posibilidad de saber cuantos inodos van a usar todo el espacio del disco
+    /* No existe la posibilidad de saber cuantos inodos van a usar t0do el espacio del disco
      * por el hecho de que ese número depende de qué tamaño tendrán los inodos que se crearán en el futuro.
      * Por ejemplo, un usuario puede crear 2 inodos y éstos ocupar el 100% del espacio del disco. Por lo tanto,
      * lo óptimo en este caso sería que la tabla de inodos fuese de 2 punteros.
@@ -37,18 +37,18 @@ int initSB(unsigned int nbloques, unsigned int ninodos){
      */
 
     sb->posPrimerBloqueMB = posSB + 1; // El bloque #0 lo utiliza el SB, por lo tanto sería el siguiente bloque
-    sb->posUltimoBloqueMB = sb->posPrimerBloqueMB + tamMB(nbloques);
+    sb->posUltimoBloqueMB = sb->posPrimerBloqueMB + tamMB(nbloques) - 1;
 
-    sb->posPrimerBloqueAI = sb->posUltimoBloqueMB;
-    sb->posUltimoBloqueAI = sb->posPrimerBloqueAI + tamAI(ninodos);
+    sb->posPrimerBloqueAI = sb->posUltimoBloqueMB + 1; // todo: Ajustar valor
+    sb->posUltimoBloqueAI = sb->posPrimerBloqueAI + tamAI(ninodos) - 1;
 
-    sb->posPrimerBloqueDatos = sb->posUltimoBloqueAI;
-    sb->posUltimoBloqueDatos = nbloques;
+    sb->posPrimerBloqueDatos = sb->posUltimoBloqueAI + 1;
+    sb->posUltimoBloqueDatos = nbloques - 1;
 
     sb->posInodoRaiz = 0;
     sb->posPrimerInodoLibre = 0;
 
-    sb->cantBloquesLibres = sb->posUltimoBloqueDatos - sb->posPrimerBloqueDatos;
+    sb->cantBloquesLibres = sb->posUltimoBloqueDatos - sb->posPrimerBloqueDatos + 1;
     sb->cantInodosLibres = ninodos;
 
     sb->totBloques = nbloques;
@@ -73,7 +73,7 @@ int initMB(unsigned int nbloques) {
     }
 
     // Los bloques del mapa de bits se limpian con 0s
-    for (int i = sb->posPrimerBloqueMB; i < sb->posUltimoBloqueMB; ++i) {
+    for (int i = sb->posPrimerBloqueMB; i <= sb->posUltimoBloqueMB; ++i) {
         if(bwrite(i, buf) == -1){
             return -1;
         }
@@ -83,10 +83,10 @@ int initMB(unsigned int nbloques) {
      * Se establecen a ocupados los bloques usados por el superbloque, mapa de bits y array de inodos.
      */
     escribit_bit(0,1); // El superbloque es bloque ocupado
-    for (int i = sb->posPrimerBloqueMB; i < sb->posUltimoBloqueMB; ++i) {
+    for (int i = sb->posPrimerBloqueMB; i <= sb->posUltimoBloqueMB; ++i) {
         escribit_bit(i,1);
     }
-    for (int i = sb->posPrimerBloqueAI; i < sb->posUltimoBloqueAI; ++i) {
+    for (int i = sb->posPrimerBloqueAI; i <= sb->posUltimoBloqueAI; ++i) {
         escribit_bit(i,1);
     }
 
@@ -105,12 +105,12 @@ int initAI(unsigned int ninodos) {
         return -1;
     }
 
-//    if(sizeof(inodo_t) != 128){
-//        puts("Problemas de alineacion de estructuras.");
-//        return -1;
-//    }// todo: debugging
+    if(sizeof(inodo_t) != 128){
+        puts("Problemas de alineacion de estructuras.");
+        return -1;
+    }// todo: debugging
 
-    for (int i = sb->posPrimerBloqueAI; i < sb->posUltimoBloqueAI; ++i) {
+    for (int i = sb->posPrimerBloqueAI; i <= sb->posUltimoBloqueAI; ++i) {
 
         unsigned int
                 iteraciones = i - (sb->posPrimerBloqueAI), // TODO: hacer este calculo o ir restando cada iteracion?
@@ -251,7 +251,7 @@ int reservar_bloque(){
 
     // Analizamos el bloque en busca de la posicion del primer bit a 0
     int posbit = -1, posbyte = -1, posbloque = -1, bitFound = 0;
-    memset(bufferAux, 1, BLOCKSIZE);
+    memset(bufferAux, 255, BLOCKSIZE); // TODO: testear
 
     for (posbloque = sb->posPrimerBloqueMB; !bitFound ; ++posbloque) {
         bread(posbloque,bufferMB);
@@ -366,7 +366,7 @@ int leer_inodo(unsigned int ninodo, inodo_t * inodo){
         return -1;
     }
 
-    *inodo = bufferAI[ninodo%INODOS_EN_BLOQUE]; //todo: Correcto?
+    *inodo = bufferAI[ninodo%INODOS_EN_BLOQUE];
 
     free(sb);
     //free(bufferAI); // TODO: Hay que hacer free a todo menos al sitio donde apunta inodo!!
@@ -417,7 +417,9 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos){
         return -1;
     }
 
-    if(bwrite(posSB, sb) == -1){ // Guardamos la posicion del primer inodo libre actualizada
+    --(sb->cantInodosLibres);
+
+    if(bwrite(posSB, sb) == -1){ // Guardamos la posicion del primer inodo libre y la cantidad de inodos libres actualizada
         return -1;
     }
 
@@ -426,3 +428,52 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos){
     return posNuevoInodo;
 
  }
+
+int obtener_nrangoBL (inodo_t inodo, unsigned int nblogico, int * ptr){
+    if(nblogico < DIRECTOS){
+        *ptr = inodo.punterosDirectos[nblogico];
+        return 0;
+    } else if (nblogico < INDIRECTOS0){
+        *ptr = inodo.punterosIndirectos[0];
+        return 1;
+    } else if (nblogico < INDIRECTOS1){
+        *ptr = inodo.punterosIndirectos[1];
+        return 2;
+    } else if (nblogico < INDIRECTOS2) {
+        *ptr = inodo.punterosIndirectos[2];
+        return 3;
+    } else {
+        *ptr = 0;
+        fprintf(stderr,"El bloque %u esta fuera de rango.",nblogico);
+        return -1;
+    }
+}
+
+int obtener_indice(int nblogico, int nivel_punteros){
+    if(nblogico < DIRECTOS){
+        return nblogico;
+
+    } else if(nblogico < INDIRECTOS1){
+        if(nivel_punteros == 2){
+            return (nblogico - INDIRECTOS0)/NPUNTEROS;
+        } else if(nivel_punteros == 1){
+            return (nblogico-INDIRECTOS0) % NPUNTEROS;
+        }
+
+    } else if(nblogico < INDIRECTOS2){
+        if(nivel_punteros == 3){
+            return (nblogico-INDIRECTOS1)/(NPUNTEROS*NPUNTEROS);
+        } else if (nivel_punteros == 2){
+            return ((nblogico-INDIRECTOS1) % (NPUNTEROS*NPUNTEROS))/NPUNTEROS;
+        } else if (nivel_punteros == 1){
+            return ((nblogico-INDIRECTOS1) % (NPUNTEROS*NPUNTEROS)) % NPUNTEROS;
+        }
+    }
+
+    fprintf(stderr,"Bloque (%u) fuera de rango o nivel_punteros invalido (%u)",nblogico,nivel_punteros);
+    return -1;
+}
+
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reservar){
+    return 0;
+}

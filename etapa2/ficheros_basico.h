@@ -5,6 +5,12 @@
 #define posSB 0 //el superbloque se escribe en el primer bloque de nuestro FS
 #define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(inodo_t))
 
+#define NPUNTEROS (int) BLOCKSIZE/sizeof(unsigned int)
+#define DIRECTOS 12
+#define INDIRECTOS0 NPUNTEROS + DIRECTOS    //268
+#define INDIRECTOS1 NPUNTEROS * NPUNTEROS + INDIRECTOS0   //65.804
+#define INDIRECTOS2 NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1 //16.843.020
+
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits
     unsigned int posUltimoBloqueMB;     //Posición del último bloque del mapa de bits
@@ -110,8 +116,35 @@ int reservar_bloque();
  */
 int liberar_bloque(unsigned int nbloque);
 
+/**
+ * Escribe el inodo $inodo en la posicion $ninodo del array de inodos.
+ * @param inodo
+ * @param ninodo
+ * @return
+ */
 int escribir_inodo(inodo_t inodo, unsigned int ninodo);
 
+/**
+ * Lee el inodo de la posicion $ninodo del array de inodos y lo apunta con $inodo
+ * @param ninodo
+ * @param inodo
+ * @return
+ */
 int leer_inodo(unsigned int ninodo, inodo_t * inodo);
 
+/**
+ * Reserva una posicion de inodo libre y devuelve ésta
+ * @param tipo
+ * @param permisos
+ * @return
+ */
 int reservar_inodo(unsigned char tipo, unsigned char permisos);
+
+/**
+ * 
+ * @param ninodo
+ * @param nblogico
+ * @param reservar
+ * @return
+ */
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reservar);
