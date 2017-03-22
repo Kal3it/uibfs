@@ -11,6 +11,15 @@
 #define INDIRECTOS1 NPUNTEROS * NPUNTEROS + INDIRECTOS0   //65.804
 #define INDIRECTOS2 NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1 //16.843.020
 
+#define NPUNTEROS_CUADRADO  NPUNTEROS * NPUNTEROS
+#define NPUNTEROS_CUBO      NPUNTEROS * NPUNTEROS * NPUNTEROS
+
+#define BLOQUE_FUERA_DE_RANGO -4
+#define INODO_FUERA_DE_RANGO -5
+#define BLOQUE_LOGICO_NO_INICIALIZADO -6
+#define NO_QUEDAN_BLOQUES_LIBRES -7
+#define NO_QUEDAN_INODOS_LIBRES -8
+
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits
     unsigned int posUltimoBloqueMB;     //Posición del último bloque del mapa de bits
@@ -104,7 +113,7 @@ int escribit_bit(unsigned int nbloque, unsigned int bit);
 unsigned char leer_bit(unsigned int nbloque);
 
 /**
- * Marca como ocupado el primer bloque no ocupado.
+ * Marca como ocupado el primer bloque no ocupado y devuelve la direccion fisica de éste
  * @return
  */
 int reservar_bloque();
@@ -141,10 +150,10 @@ int leer_inodo(unsigned int ninodo, inodo_t * inodo);
 int reservar_inodo(unsigned char tipo, unsigned char permisos);
 
 /**
- * 
+ * Dado un ninodo y el bloque logico de éste, devuelve el bloque físico asociado.
  * @param ninodo
  * @param nblogico
- * @param reservar
+ * @param reservar Inicializa el bloque si no lo está
  * @return
  */
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reservar);
