@@ -6,6 +6,10 @@
 #include "etapa1/bloques.h"
 #include "etapa2/ficheros_basico.h"
 
+
+void imprimirInodoInfo(unsigned int ninodo);
+void imprimirSbInfo();
+
 int main(int argc, char const *argv[]) {
 
     if (argc != 2) {
@@ -13,29 +17,9 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
-    struct superbloque sb;
-
     bmount(argv[1]);
 
-    // Leer superbloque
-    if(bread(posSB, &sb) == -1) return -1;
-
-    puts("INFORMACION DEL SUPERBLOQUE");
-    printf("Primer bloque MB: %d\n",sb.posPrimerBloqueMB);
-    printf("Ultimo bloque MB: %d\n",sb.posUltimoBloqueMB);
-    printf("Primer bloque AI: %d\n",sb.posPrimerBloqueAI);
-    printf("Ultimo bloque AI: %d\n",sb.posUltimoBloqueAI);
-    printf("Primer bloque Datos: %d\n",sb.posPrimerBloqueDatos);
-    printf("Ultimo bloque Datos: %d\n",sb.posUltimoBloqueDatos);
-    printf("Posicion del inodo raiz: %d\n",sb.posInodoRaiz);
-    printf("Posicion del primer inodo libre: %d\n",sb.posPrimerInodoLibre);
-    printf("Cantidad de bloques libres: %d\n",sb.cantBloquesLibres);
-    printf("Cantidad de inodos libres: %d\n",sb.cantInodosLibres);
-    printf("Bloques totales: %d\n",sb.totBloques);
-    printf("Inodos totales: %d\n",sb.totInodos);
-    printf("Sizeof superbloque: %lu\n", sizeof(struct superbloque));
-    printf("Sizeof inodo: %lu\n", sizeof(inodo_t));
-    puts("");
+//    imprimirSbInfo();
 
     // Recorrido de los inodos libres
 //    inodo_t inodos[BLOCKSIZE / T_INODO];
@@ -70,31 +54,18 @@ int main(int argc, char const *argv[]) {
 //    printf("Numero de bloques ocupados del inodo %d: %u\n",0,inodos[0].tamEnBytesLog);
 //    printf("Puntero directo %d del inodo %d: %u\n",0,0,inodos[0].punterosDirectos[0]);
 
-    inodo_t inodoRaiz;
-    if(leer_inodo(sb.posInodoRaiz,&inodoRaiz) == -1){
-        return -1;
-    }
-
-	puts("DATOS DEL DIRECTORIO RAIZ");
-	printf("Tipo: %c\n",inodoRaiz.tipo);
-	printf("Permisos: %u\n",inodoRaiz.permisos);
-	//printf("atime: %d\n",inodoRaiz.atime); // todo: imprimirlo en el formato correspondiente
-    //printf("mtime: %d\n",inodoRaiz.mtime);
-    //printf("ctime: %d\n",inodoRaiz.ctime);
-	printf("nlinks: %u\n",inodoRaiz.nlinks);
-	printf("tamEnBytesLog: %u\n",inodoRaiz.tamEnBytesLog);
-	printf("numBloquesOcupados: %u\n",inodoRaiz.numBloquesOcupados);
-    puts("");
+//	puts("DATOS DEL DIRECTORIO RAIZ");
+//    imprimirInodoInfo(0);
 	
-	puts("MAPA DE BITS");
-	printf("valorSB: %u\n",leer_bit(posSB));
-	printf("valorPrimerBloqueMB: %u\n",leer_bit(sb.posPrimerBloqueMB));
-	printf("valorUltimoBloqueMB: %u\n",leer_bit(sb.posUltimoBloqueMB));
-	printf("valorPrimerBloqueAI: %u\n",leer_bit(sb.posPrimerBloqueAI));
-	printf("valorUltimoBloqueAI: %u\n",leer_bit(sb.posUltimoBloqueAI));
-	printf("valorPrimerBloqueDatos: %u\n",leer_bit(sb.posPrimerBloqueDatos));
-	printf("valorUltimoBloqueDatos: %u\n",leer_bit(sb.posUltimoBloqueDatos));
-    puts("");
+//	puts("MAPA DE BITS");
+//	printf("valorSB: %u\n",leer_bit(posSB));
+//	printf("valorPrimerBloqueMB: %u\n",leer_bit(sb.posPrimerBloqueMB));
+//	printf("valorUltimoBloqueMB: %u\n",leer_bit(sb.posUltimoBloqueMB));
+//	printf("valorPrimerBloqueAI: %u\n",leer_bit(sb.posPrimerBloqueAI));
+//	printf("valorUltimoBloqueAI: %u\n",leer_bit(sb.posUltimoBloqueAI));
+//	printf("valorPrimerBloqueDatos: %u\n",leer_bit(sb.posPrimerBloqueDatos));
+//	printf("valorUltimoBloqueDatos: %u\n",leer_bit(sb.posUltimoBloqueDatos));
+//    puts("");
 
 //    inodo_t inodo;
 //    unsigned int bufferBloqueIndice[NPUNTEROS];
@@ -129,18 +100,63 @@ int main(int argc, char const *argv[]) {
 //    unsigned int nbloquefisico = traducir_bloque_inodo(ninodo, 400004, 0);
 //    printf("El bloque fisico resulto es %u\n",nbloquefisico);
 
-    puts("INODO CON BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 16.843.019");
-    int ninodo=reservar_inodo('f', 6);
-    printf ("ninodo: %d\n", ninodo);
-    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 8, 1));
-    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 204, 1));
-    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 30004, 1));
-    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 400004, 1));
-    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 16843019, 1));
+//    puts("INODO CON BLOQUES LOGICOS 8, 204, 30.004, 400.004 y 16.843.019");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 8, 1));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 204, 1));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 30004, 1));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 400004, 1));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 16843019, 1));
+//    puts("---------------------");
 
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 8, 0));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 204, 0));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 30004, 0));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 400004, 0));
+//    puts("---------------------");
+//    printf("ptr bloque fisico de datos: %u\n",traducir_bloque_inodo(ninodo, 16843019, 0));
+//    puts("---------------------");
+
+//    unsigned int ninodo = reservar_inodo('f',7);
+//    printf("indoo reservado %u\n",ninodo);
+
+    liberar_inodo(6);
+    liberar_inodo(2);
+    liberar_inodo(3);
+
+//    traducir_bloque_inodo(ninodo, 1, 1);
+//    traducir_bloque_inodo(ninodo, 5, 1);
+//    traducir_bloque_inodo(ninodo, 7, 1);
+//    traducir_bloque_inodo(ninodo, 9, 1);
+//    traducir_bloque_inodo(ninodo, 10, 1);
+//    traducir_bloque_inodo(ninodo, 168, 1);
+//    traducir_bloque_inodo(ninodo, 404, 1);
+//    traducir_bloque_inodo(ninodo, 405, 1);
+//    traducir_bloque_inodo(ninodo, 405, 1);
+//    traducir_bloque_inodo(ninodo, 900, 1);
+
+//    liberar_inodo(10);
+//    liberar_inodo(4);
+//    liberar_inodo(5);
+
+//    imprimirInodoInfo(ninodo);
+    imprimirSbInfo();
+    bumount();
+
+    return 0;
+}
+
+void imprimirInodoInfo(unsigned int ninodo){
     inodo_t inodo;
     leer_inodo(ninodo,&inodo);
-    puts("");
+
+    puts("INFORMACION DEL INODO: ");
     printf("Tipo: %c\n",inodo.tipo);
     printf("Permisos: %u\n",inodo.permisos);
     //printf("atime: %d\n",inodoRaiz.atime); // todo: imprimirlo en el formato correspondiente
@@ -149,11 +165,43 @@ int main(int argc, char const *argv[]) {
     printf("nlinks: %u\n",inodo.nlinks);
     printf("tamEnBytesLog: %u\n",inodo.tamEnBytesLog);
     printf("numBloquesOcupados: %u\n",inodo.numBloquesOcupados);
+
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[0]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[1]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[2]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[3]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[4]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[5]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[6]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[7]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[8]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[9]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[10]);
+    printf("punterosDirectos: %u\n",inodo.punterosDirectos[11]);
+    printf("punterosIndirectos0: %u\n",inodo.punterosIndirectos[0]);
+    printf("punterosIndirectos1: %u\n",inodo.punterosIndirectos[1]);
+    printf("punterosIndirectos2: %u\n",inodo.punterosIndirectos[2]);
     puts("");
+}
 
-    if(bumount() == -1){
-        return -1;
-    }
+void imprimirSbInfo(){
+    struct superbloque sb;
+    bread(posSB,&sb);
 
-    return 0;
+    puts("INFORMACION DEL SUPERBLOQUE");
+    printf("Primer bloque MB: %d\n",sb.posPrimerBloqueMB);
+    printf("Ultimo bloque MB: %d\n",sb.posUltimoBloqueMB);
+    printf("Primer bloque AI: %d\n",sb.posPrimerBloqueAI);
+    printf("Ultimo bloque AI: %d\n",sb.posUltimoBloqueAI);
+    printf("Primer bloque Datos: %d\n",sb.posPrimerBloqueDatos);
+    printf("Ultimo bloque Datos: %d\n",sb.posUltimoBloqueDatos);
+    printf("Posicion del inodo raiz: %d\n",sb.posInodoRaiz);
+    printf("Posicion del primer inodo libre: %d\n",sb.posPrimerInodoLibre);
+    printf("Cantidad de bloques libres: %d\n",sb.cantBloquesLibres);
+    printf("Cantidad de inodos libres: %d\n",sb.cantInodosLibres);
+    printf("Bloques totales: %d\n",sb.totBloques);
+    printf("Inodos totales: %d\n",sb.totInodos);
+    printf("Sizeof superbloque: %lu\n", sizeof(struct superbloque));
+    printf("Sizeof inodo: %lu\n", sizeof(inodo_t));
+    puts("");
 }
