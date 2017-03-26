@@ -5,20 +5,17 @@
 #define posSB 0 //el superbloque se escribe en el primer bloque de nuestro FS
 #define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(inodo_t))
 
-#define NPUNTEROS (int) BLOCKSIZE/sizeof(unsigned int)
 #define DIRECTOS 12
-#define INDIRECTOS0 NPUNTEROS + DIRECTOS    //268
-#define INDIRECTOS1 NPUNTEROS * NPUNTEROS + INDIRECTOS0   //65.804
-#define INDIRECTOS2 NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1 //16.843.020
-
+#define NPUNTEROS (int) (BLOCKSIZE/sizeof(unsigned int))
 #define NPUNTEROS_CUADRADO  NPUNTEROS * NPUNTEROS
 #define NPUNTEROS_CUBO      NPUNTEROS * NPUNTEROS * NPUNTEROS
 
 #define BLOQUE_FUERA_DE_RANGO -4
-#define INODO_FUERA_DE_RANGO -5
+#define BLOQUE_LOGICO_FUERA_DE_RANGO -5
 #define BLOQUE_LOGICO_NO_INICIALIZADO -6
 #define NO_QUEDAN_BLOQUES_LIBRES -7
 #define NO_QUEDAN_INODOS_LIBRES -8
+#define INODO_YA_LIBERADO -9
 
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits
@@ -157,3 +154,18 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos);
  * @return
  */
 int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reservar);
+
+/**
+ * Libera todos los bloques logicos del inodo numero $ninodo a partir de $nblogico
+ * @param ninodo
+ * @param nblogico
+ * @return
+ */
+int liberar_bloques_inodo(unsigned int ninodo, unsigned int nblogico);
+
+/**
+ *
+ * @param ninodo
+ * @return
+ */
+int liberar_inodo(unsigned int ninodo);
