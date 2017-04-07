@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "etapa1/bloques.h"
-#include "etapa2/ficheros_basico.h"
+#include "bloques/bloques.h"
+#include "ficheros_basico/ficheros_basico.h"
 
 
 void imprimirInodoInfo(unsigned int ninodo);
@@ -19,7 +19,7 @@ int main(int argc, char const *argv[]) {
 
     bmount(argv[1]);
 
-//    imprimirSbInfo();
+    imprimirSbInfo();
 
     // Recorrido de los inodos libres
 //    inodo_t inodos[BLOCKSIZE / T_INODO];
@@ -126,27 +126,6 @@ int main(int argc, char const *argv[]) {
 //    unsigned int ninodo = reservar_inodo('f',7);
 //    printf("indoo reservado %u\n",ninodo);
 
-    liberar_inodo(6);
-    liberar_inodo(2);
-    liberar_inodo(3);
-
-//    traducir_bloque_inodo(ninodo, 1, 1);
-//    traducir_bloque_inodo(ninodo, 5, 1);
-//    traducir_bloque_inodo(ninodo, 7, 1);
-//    traducir_bloque_inodo(ninodo, 9, 1);
-//    traducir_bloque_inodo(ninodo, 10, 1);
-//    traducir_bloque_inodo(ninodo, 168, 1);
-//    traducir_bloque_inodo(ninodo, 404, 1);
-//    traducir_bloque_inodo(ninodo, 405, 1);
-//    traducir_bloque_inodo(ninodo, 405, 1);
-//    traducir_bloque_inodo(ninodo, 900, 1);
-
-//    liberar_inodo(10);
-//    liberar_inodo(4);
-//    liberar_inodo(5);
-
-//    imprimirInodoInfo(ninodo);
-    imprimirSbInfo();
     bumount();
 
     return 0;

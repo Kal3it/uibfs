@@ -92,10 +92,11 @@ int initAI(unsigned int ninodos) {
 
     bread(posSB, &sb);
 
+    // todo: debugging
 //    if (sizeof(inodo_t) != 128) {
 //        puts("Problemas de alineacion de estructuras.");
 //        return -1;
-//    }// todo: debugging
+//    }
 
     for (int i = sb.posPrimerBloqueAI; i <= sb.posUltimoBloqueAI; ++i) {
 
@@ -105,7 +106,7 @@ int initAI(unsigned int ninodos) {
                 inodosEnBloque = (inodosRestantes >= maxInodosEnBloque) ? maxInodosEnBloque : inodosRestantes;
 
         inodo_t inodos[inodosEnBloque];
-        //memset(inodos, 0, size * T_INODO); // ºTODO: Conseguir que el espacio sin ocupar del array almacene todo 0s?
+        //memset(inodos, 0, size * T_INODO); // TODO: Conseguir que el espacio sin ocupar del array almacene todo 0s?
 
         for (int j = sb.posPrimerInodoLibre; j < inodosEnBloque; ++j) {
 
@@ -146,7 +147,7 @@ int escribit_bit(unsigned int nbloque, unsigned int bit) {
 
     /** Debugging */
     if (nbloque >= sb.totBloques) {
-        // todo: Voy a añadir estas lineas por si de aqui en adelante tenemos errores,
+        // todo: Debugging
         // para saber si vienen de aqui.
         // Cuando se entrege eliminamos las lineas.
         fprintf(stderr, "El bloque %u no existe. El ultimo bloque es el %u.\n", nbloque, sb.totBloques - 1);
@@ -250,7 +251,7 @@ int reservar_bloque() {
     memset(bufferAux, 0, BLOCKSIZE);
     bwrite(nbloque, bufferAux);
 
-//    // todo: debbugging
+// todo: debbugging
 //    printf("El primer bit a cero esta en la posicion %d del byte %d del bloque %d\n",posbit,posbyte,posbloque);
 //    printf("El bloque libre es el %u\n",nbloque);
 //
@@ -562,11 +563,6 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
                 ++inodo.numBloquesOcupados;
                 inodo.ctime = time(NULL);
 
-                if((inodo.tamEnBytesLog / BLOCKSIZE) < (BLOCKSIZE * (nblogico+1))){ // todo: es correcta la operacion?
-                    //printf("El nuevo tamaño del fichero es %u\n",BLOCKSIZE * (nblogico+1)); // todo: Si es demasiado grande no lo coge bien
-                    inodo.tamEnBytesLog = BLOCKSIZE * (nblogico+1);
-                }
-
                 escribir_inodo(inodo, ninodo);
 
             } else {
@@ -647,11 +643,6 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
     }
 
     unsigned int nbloqueFisico = indireccionar(ptrInicial, nivel, nblogico_relativo, denominador, &inodo, reservar);
-
-    if((inodo.tamEnBytesLog / BLOCKSIZE) < (BLOCKSIZE * (nblogico+1))){
-        //printf("El nuevo tamaño del fichero es %u\n",BLOCKSIZE * (nblogico+1)); todo: debug
-        inodo.tamEnBytesLog = BLOCKSIZE * (nblogico+1);
-    }
 
     escribir_inodo(inodo,ninodo);
 
@@ -794,11 +785,9 @@ int liberar_bloques_inodo(unsigned int ninodo, unsigned int nblogico){
     inodo_t inodo;
     leer_inodo(ninodo,&inodo);
 
-    for (unsigned int i = nblogico; i < (inodo.tamEnBytesLog / BLOCKSIZE); ++i) {
+    for (unsigned int i = nblogico; i < 100 ; ++i) { // todo: como saber cual es el ultimo bloque ocupado: con tamEnBytesLog
         liberar_bloque_inodo(&inodo, i);
     }
-
-    // todo: nuevo tamEnBytesLog??
 
     escribir_inodo(inodo,ninodo);
 
@@ -809,20 +798,18 @@ int liberar_inodo(unsigned int ninodo){
     struct superbloque sb;
     inodo_t inodo;
 
-    // todo: falta comprobar si el inodo ya esta libre o no.
-
     liberar_bloques_inodo(ninodo, 0);
 
     leer_inodo(ninodo,&inodo);
     bread(posSB,&sb);
 
-    if(inodo.tipo == 'x'){
+    if(inodo.tipo == 'l'){ // todo: que letra hay que usar?
         fprintf(stderr,"El inodo %u ya es un inodo libre.\n",ninodo);
         return (INODO_YA_LIBERADO);
     }
 
     inodo.punterosDirectos[0] = sb.posPrimerInodoLibre;
-    inodo.tipo = 'x';
+    inodo.tipo = 'l';
     sb.posPrimerInodoLibre = ninodo;
     sb.cantInodosLibres++;
 

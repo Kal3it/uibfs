@@ -3,8 +3,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "etapa1/bloques.h"
-#include "etapa2/ficheros_basico.h"
+#include "bloques/bloques.h"
+#include "ficheros_basico/ficheros_basico.h"
 
 int main(int argc, char const *argv[])
 {

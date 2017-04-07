@@ -1,6 +1,6 @@
 #include <time.h>
 #include <limits.h>
-#include "../etapa1/bloques.h"
+#include "../bloques/bloques.h"
 
 #define posSB 0 //el superbloque se escribe en el primer bloque de nuestro FS
 #define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(inodo_t))
