@@ -13,42 +13,23 @@ int main(int argc, char const *argv[])
 		return -1;
 	}
 
+    bmount(argv[1]);
+
     unsigned int nbloques = atoi(argv[2]);
-    unsigned char *buf = (unsigned char*)malloc(BLOCKSIZE);
+    unsigned char buf[BLOCKSIZE];
 	memset(buf,0,BLOCKSIZE);
 
-    if(bmount(argv[1]) == -1){
-        return -1;
-    }
-
-	for (int i = 0; i < nbloques; ++i)
-	{
-		if(bwrite(i,buf) == -1){
-            return -1;
-        }
-	}
+	for (int i = 0; i < nbloques; ++i) bwrite(i,buf); // Todo: limpiar todos los bloques con 0?
 
 	unsigned int ninodos = nbloques/4;
-    if(initSB(nbloques, ninodos) == -1){
-        return -1;
-    }
-    if(initMB(nbloques) == -1){
-        return -1;
-    }
-    if(initAI(ninodos) == -1){
-        return -1;
-    }
+    initSB(nbloques, ninodos);
+    initMB(nbloques);
+    initAI(ninodos);
 
     // Creacion del directorio raiz. Se reserva el inodo 0.
-    if(reservar_inodo('d',7) == -1){
-        return -1;
-    }
+    reservar_inodo('d',7);
 
-	if(bumount() == -1){
-        return -1;
-    }
-
-    free(buf);
+	bumount();
 
     return 0;
 }

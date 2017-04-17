@@ -74,7 +74,6 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
             bwrite(ptrLastBloque, buffer);
             bytesEscritos += lByteRelativo+1;
             break;
-
     }
     //fprintf(stderr,"Bytes escritos: %d\n",bytesEscritos);
 
@@ -110,7 +109,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     unsigned int
             firstByte = offset,
-            lastByte = inodo.tamEnBytesLog > (offset + nbytes - 1) ? inodo.tamEnBytesLog : (offset + nbytes - 1),
+            lastByte = inodo.tamEnBytesLog - 1 < (offset + nbytes - 1) ? inodo.tamEnBytesLog - 1 : (offset + nbytes - 1),
 
             firstBloqueLogico = firstByte/BLOCKSIZE,
             lastBloqueLogico = lastByte/BLOCKSIZE,
@@ -118,7 +117,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
             fByteRelativo = firstByte % BLOCKSIZE,
             lByteRelativo = lastByte % BLOCKSIZE,
 
-            ptrFirstBloque = traducir_bloque_inodo(ninodo, firstBloqueLogico, 0), //todo: Hay que devolver el error o exit()?
+            ptrFirstBloque = traducir_bloque_inodo(ninodo, firstBloqueLogico, 0),
             ptrLastBloque = traducir_bloque_inodo(ninodo, lastBloqueLogico, 0),
             bytesLeidos = 0;
 
@@ -126,34 +125,44 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     switch (firstBloqueLogico == lastBloqueLogico){
         case 1:
             //fprintf(stderr,"Primer y unico bloque: En el bloque fisico %u desde la posicion del buffer_original %u, leemos desde el byte del buffer %u hasta la %u (%u bytes)\n",ptrFirstBloque, 0, fByteRelativo, lByteRelativo,lByteRelativo - fByteRelativo + 1);
-            bread(ptrFirstBloque, buffer);
-            memcpy(buf_original, buffer + fByteRelativo, lByteRelativo - fByteRelativo + 1);
+            if(ptrFirstBloque != BLOQUE_LOGICO_NO_INICIALIZADO) {
+                bread(ptrFirstBloque, buffer);
+                memcpy(buf_original, buffer + fByteRelativo, lByteRelativo - fByteRelativo + 1);
+            }
             bytesLeidos += lByteRelativo - fByteRelativo + 1;
             break;
 
         case 0:
             // Leemos del primero
-            //fprintf(stderr,"Primer bloque (%u): En el bloque fisico %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u (%u bytes)\n",firstBloqueLogico, ptrFirstBloque, lastByteEscrito, fByteRelativo, BLOCKSIZE-1,BLOCKSIZE - fByteRelativo);
-            bread(ptrFirstBloque, buffer);
-            memcpy(buf_original+bytesLeidos, buffer + fByteRelativo, BLOCKSIZE - fByteRelativo);
+            //fprintf(stderr,"Primer bloque (%u): En el bloque fisico %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u (%u bytes)\n",firstBloqueLogico, ptrFirstBloque, bytesLeidos, fByteRelativo, BLOCKSIZE-1,BLOCKSIZE - fByteRelativo);
+            if(ptrFirstBloque != BLOQUE_LOGICO_NO_INICIALIZADO) {
+                bread(ptrFirstBloque, buffer);
+                memcpy(buf_original + bytesLeidos, buffer + fByteRelativo, BLOCKSIZE - fByteRelativo);
+            }
             bytesLeidos += BLOCKSIZE - fByteRelativo;
 
             // Escribimos sobre los del medio
             for (int i = firstBloqueLogico+1; i <= lastBloqueLogico-1; ++i) {
-                //fprintf(stderr,"Bloque intermedio (%u): En el bloque %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u\n",i, traducir_bloque_inodo(ninodo,i,1), lastByteEscrito, 0, BLOCKSIZE-1);
-                bread(traducir_bloque_inodo(ninodo,i,0),buf_original+bytesLeidos);
+                int ptrBloque = traducir_bloque_inodo(ninodo,i,0);
+                //fprintf(stderr,"Bloque intermedio (%u): En el bloque %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u\n",i, ptrBloque, bytesLeidos, 0, BLOCKSIZE-1);
+                if(ptrBloque != BLOQUE_LOGICO_NO_INICIALIZADO) {
+                    bread(ptrBloque, buf_original + bytesLeidos);
+                }
                 bytesLeidos += BLOCKSIZE;
             }
 
             // Escribimos sobre el ultimo
-            //fprintf(stderr,"Ultimo bloque (%u): En el bloque fisico %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u (%u bytes)\n",lastBloqueLogico, ptrLastBloque, lastByteEscrito, 0, lByteRelativo,lByteRelativo+1);
-            bread(ptrLastBloque, buffer);
-            memcpy(buf_original+bytesLeidos, buffer, lByteRelativo+1);
+            //fprintf(stderr,"Ultimo bloque (%u): En el bloque fisico %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u (%u bytes)\n",lastBloqueLogico, ptrLastBloque, bytesLeidos, 0, lByteRelativo,lByteRelativo+1);
+            if(ptrLastBloque != BLOQUE_LOGICO_NO_INICIALIZADO) {
+                bread(ptrLastBloque, buffer);
+                memcpy(buf_original + bytesLeidos, buffer, lByteRelativo + 1);
+            }
             bytesLeidos += lByteRelativo+1;
             break;
 
     }
-    //fprintf(stderr,"Bytes leidos: %d\n",bytesLeidos);
+
+    inodo.atime = time(NULL);
 
     escribir_inodo(inodo,ninodo);
 
@@ -195,17 +204,16 @@ int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
         return PERMISOS_INSUFICIENTES;
     }
 
-    if (nbytes > inodo.tamEnBytesLog) {
-        fprintf(stderr, "El byte a partir del cual se quiere truncar (%u) excede el tamaño del inodo (%u).\n", nbytes,
-                inodo.tamEnBytesLog);
-        return ACCESO_FUERA_DE_RANGO;
+    if (inodo.tamEnBytesLog == 0 || nbytes > inodo.tamEnBytesLog-1) {
+        fprintf(stderr, "El byte a partir del cual se quiere truncar (%u) es superior al ultimo byte escrito del inodo (%d).\n", nbytes, inodo.tamEnBytesLog-1);
+        exit(ACCESO_FUERA_DE_RANGO);
     }
 
-    unsigned int nblogico = nbytes % BLOCKSIZE ? nbytes / BLOCKSIZE + 1 : nbytes / BLOCKSIZE;
-    liberar_bloques_inodo(ninodo, nblogico);
+    unsigned int primerBlogico = nbytes % BLOCKSIZE ? (nbytes / BLOCKSIZE) + 1 : (nbytes / BLOCKSIZE);
+    liberar_bloques_inodo(ninodo, primerBlogico);
 
-    // todo: solo trunca de bloque en bloque, no respeta el numero de byte especifico: hay que escribir el EOF en el byte
-
+    // Actualizamos times
+    leer_inodo(ninodo, &inodo);
     inodo.mtime = time(NULL);
     inodo.ctime = time(NULL);
     inodo.tamEnBytesLog = nbytes;

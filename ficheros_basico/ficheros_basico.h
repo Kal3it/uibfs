@@ -1,3 +1,4 @@
+//todo Comentar funciones
 #include <time.h>
 #include <limits.h>
 #include "../bloques/bloques.h"
@@ -6,7 +7,7 @@
 #define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(inodo_t))
 
 #define DIRECTOS 12
-#define NPUNTEROS (int) (BLOCKSIZE/sizeof(unsigned int))
+#define NPUNTEROS           (int) (BLOCKSIZE/sizeof(unsigned int))
 #define NPUNTEROS_CUADRADO  NPUNTEROS * NPUNTEROS
 #define NPUNTEROS_CUBO      NPUNTEROS * NPUNTEROS * NPUNTEROS
 
@@ -16,6 +17,7 @@
 #define NO_QUEDAN_BLOQUES_LIBRES -7
 #define NO_QUEDAN_INODOS_LIBRES -8
 #define INODO_YA_LIBERADO -9
+#define BLOQUE_FISICO_YA_LIBERADO -10
 
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits
@@ -37,8 +39,6 @@ typedef union _inodo{
     struct {
         unsigned char tipo; //Tipo (libre, directorio o fichero)
         unsigned char permisos; //Permisos (lectura y/o escritura y/o ejecución)
-        /* Por cuestiones internas de alineación de estructuras, si se está utilizando un tamaño de palabra de 4 bytes (microprocesadores de 32 bits): unsigned char reservado_alineacion1 [2];
-        en caso de que la palabra utilizada sea del tamaño de 8 bytes (microprocesadores de 64 bits): unsigned char reservado_alineacion1 [6]; */
 
         time_t atime; //Fecha y hora del último acceso a datos: atime
         time_t mtime; //Fecha y hora de la última modificación de datos: mtime
@@ -52,15 +52,11 @@ typedef union _inodo{
 
         unsigned int punterosDirectos[12]; //12 punteros a bloques directos
         unsigned int punterosIndirectos[3]; /*3 punteros a bloques indirectos:1 puntero indirecto simple, 1 puntero indirecto doble, 1 puntero indirecto triple */
-        /* Utilizar una variable de alineación si es necesario para vuestra plataforma/compilador;
-        */
-        // Hay que restar también lo que ocupen las variables de alineación utilizadas!!!
     };
     char padding[T_INODO];
 } inodo_t;
 
 /**
- *
  * @param nbloques
  * @return tamaño del mapa de bits en bloques.
  */
@@ -163,9 +159,4 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
  */
 int liberar_bloques_inodo(unsigned int ninodo, unsigned int nblogico);
 
-/**
- *
- * @param ninodo
- * @return
- */
 int liberar_inodo(unsigned int ninodo);
