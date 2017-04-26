@@ -96,20 +96,24 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     inodo_t inodo;
     leer_inodo(ninodo, &inodo);
 
-    if(nbytes == 0){
-        inodo.atime = time(NULL);
-        escribir_inodo(inodo,ninodo);
-        return nbytes;
-    }
-
     if(!tiene_permiso(inodo.permisos, 'r')){
         fprintf(stderr,"Este inodo no tiene permisos de lectura.\n");
         return PERMISOS_INSUFICIENTES;
     }
 
+    if(nbytes == 0){
+        inodo.atime = time(NULL);
+        escribir_inodo(inodo,ninodo);
+        return 0;
+    }
+
+    if(offset > inodo.tamEnBytesLog){
+        return ACCESO_FUERA_DE_RANGO;
+    }
+
     unsigned int
             firstByte = offset,
-            lastByte = inodo.tamEnBytesLog - 1 < (offset + nbytes - 1) ? inodo.tamEnBytesLog - 1 : (offset + nbytes - 1),
+            lastByte = inodo.tamEnBytesLog < (offset + nbytes) ? inodo.tamEnBytesLog - 1 : (offset + nbytes) - 1,
 
             firstBloqueLogico = firstByte/BLOCKSIZE,
             lastBloqueLogico = lastByte/BLOCKSIZE,

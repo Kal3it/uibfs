@@ -95,13 +95,6 @@ int main(int argc, char const *argv[]){
     offsets[3] = 30720000;
     offsets[4] = 71680000;
 
-    stat_t stat;
-    unsigned int inodos_diferentes = atoi(argv[3]);
-    unsigned int num_inodos = inodos_diferentes ? numoffsets : 1; // 1 inodo o tantos como offsets
-    int ninodos[num_inodos];
-    const char *buffer = argv[2];
-    const int len = strlen(buffer);
-
     if (argc != 4) {
         puts("Uso: escribir <nombre_dispositivo> <\"$(cat fichero)\"> <diferentes_inodos>");
         fprintf(stderr,"Offsets: ");
@@ -112,6 +105,13 @@ int main(int argc, char const *argv[]){
         puts("Si diferentes_inodos=0 se reserva un solo inodo para todos los offsets");
         return -1;
     }
+
+    stat_t stat;
+    unsigned int inodos_diferentes = atoi(argv[3]);
+    unsigned int num_inodos = inodos_diferentes ? numoffsets : 1; // 1 inodo o tantos como offsets
+    int ninodos[num_inodos];
+    const char *buffer = argv[2];
+    const int len = strlen(buffer);
 
     bmount(argv[1]);
 
