@@ -2,10 +2,10 @@ CC=gcc
 CFLAGS=-c -g -Wall -std=c99
 #LDFLAGS=-pthread
 
-SOURCES=bloques/bloques.c ficheros_basico/ficheros_basico.c ficheros/ficheros.c mi_mkfs.c leer_sf.c escribir.c leer.c truncar.c permitir.c
-LIBRARIES=bloques/bloques.o ficheros_basico/ficheros_basico.o ficheros/ficheros.o
-INCLUDES=bloques/bloques.h ficheros_basico/ficheros_basico.h ficheros/ficheros.h
-PROGRAMS=mi_mkfs leer_sf escribir leer truncar permitir
+SOURCES=bloques/bloques.c ficheros_basico/ficheros_basico.c ficheros/ficheros.c directorios/directorios.c mi_mkfs.c leer_sf.c escribir.c leer.c truncar.c permitir.c mi_creat
+LIBRARIES=bloques/bloques.o ficheros_basico/ficheros_basico.o ficheros/ficheros.o directorios/directorios.o
+INCLUDES=bloques/bloques.h ficheros_basico/ficheros_basico.h ficheros/ficheros.h directorios/directorios.h
+PROGRAMS=mi_mkfs leer_sf escribir leer truncar permitir mi_creat
 OBJS=$(SOURCES:.c=.o)
 
 all: $(OBJS) $(PROGRAMS)
@@ -29,6 +29,9 @@ truncar: truncar.o $(LIBRARIES) $(INCLUDES)
 	$(CC) $(LIBRARIES) $< -o $@
 
 permitir: permitir.o $(LIBRARIES) $(INCLUDES)
+	$(CC) $(LIBRARIES) $< -o $@
+
+mi_creat: mi_creat.o $(LIBRARIES) $(INCLUDES)
 	$(CC) $(LIBRARIES) $< -o $@
 
 %.o: %.c $(INCLUDES)
