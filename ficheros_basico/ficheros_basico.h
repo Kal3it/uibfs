@@ -23,6 +23,7 @@
 #define NO_QUEDAN_INODOS_LIBRES -8
 #define INODO_YA_LIBERADO -9
 #define BLOQUE_FISICO_YA_LIBERADO -10
+#define PERMISOS_INVALIDOS -11
 
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits

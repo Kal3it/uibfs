@@ -90,7 +90,7 @@ int initAI(unsigned int ninodos) {
 
         for (int j = sb.posPrimerInodoLibre; j < inodosEnBloque; ++j) {
 
-            inodos[j].tipo = 'l'; // todo. tipo l es libre??
+            inodos[j].tipo = TIPO_LIBRE; // todo. tipo l es libre??
             inodos[j].atime = time(NULL);
             inodos[j].mtime = time(NULL);
             inodos[j].ctime = time(NULL);
@@ -226,6 +226,8 @@ int reservar_bloque() {
     memset(bufferAux, 0, BLOCKSIZE);
     bwrite(nbloque, bufferAux);
 
+    //fprintf(stderr,"Se reserva el bloque fisico %u\n",nbloque);
+
     return nbloque;
 }
 
@@ -295,6 +297,10 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
     if (sb.cantInodosLibres == 0) {
         fprintf(stderr, "No quedan inodos libres.\n");
         exit(NO_QUEDAN_INODOS_LIBRES);
+    }
+    if(permisos > ((unsigned int) 7)){
+        fprintf(stderr, "El valor para permisos '%u' es invalido.\n",permisos);
+        exit(PERMISOS_INVALIDOS);
     }
 
     // Inicializamos el nuevo inodo
@@ -420,6 +426,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
         if(inodo.punterosDirectos[nblogico] == 0){
             if(reservar){
                 inodo.punterosDirectos[nblogico] = reservar_bloque();
+                //fprintf(stderr,"Bloque fisico %u asignado a bloque logico %u\n",inodo.punterosDirectos[nblogico],nblogico);
                 ++inodo.numBloquesOcupados;
                 inodo.ctime = time(NULL);
 
@@ -553,7 +560,7 @@ int liberar_bloques_recursivo(unsigned int ptrBloqueIndice, int indirecciones_re
     return 0;
 }
 
-int liberar_bloque_inodo(inodo_t * inodo, unsigned int nblogico) {
+int liberar_bloque_inodo(inodo_t *inodo, unsigned int nblogico) {
     unsigned int nblogico_relativo, ptrInicial, denominador;
     int nivel;
 
@@ -624,6 +631,8 @@ int liberar_bloques_inodo(unsigned int ninodo, unsigned int nblogico){
     leer_inodo(ninodo,&inodo);
     unsigned int ultimoBlogico = (inodo.tamEnBytesLog-1) / BLOCKSIZE;
 
+    if(inodo.tamEnBytesLog == 0) return 0; // No hay bloques que liberar
+
     fprintf(stderr,"primer BL: %u, ultimo BL: %u.\n",nblogico,ultimoBlogico);
     for (unsigned int i = nblogico; i <= ultimoBlogico ; ++i) {
         liberar_bloque_inodo(&inodo, i);
@@ -644,18 +653,20 @@ int liberar_inodo(unsigned int ninodo){
     bread(posSB,&sb);
 
     // todo debugging
-    if(inodo.tipo == 'l'){ // todo: que letra hay que usar?
+    if(inodo.tipo == TIPO_LIBRE){
         fprintf(stderr,"El inodo %u ya es un inodo libre.\n",ninodo);
         exit(INODO_YA_LIBERADO);
     }
 
     inodo.punterosDirectos[0] = sb.posPrimerInodoLibre;
-    inodo.tipo = 'l';
+    inodo.tipo = TIPO_LIBRE;
     sb.posPrimerInodoLibre = ninodo;
     sb.cantInodosLibres++;
 
     escribir_inodo(inodo,ninodo);
     bwrite(posSB,&sb);
+
+    fprintf(stderr,"Inodo %u liberado.\n",ninodo);
 
     return ninodo;
 }

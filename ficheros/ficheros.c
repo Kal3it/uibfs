@@ -40,7 +40,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
             lByteRelativo = lastByte % BLOCKSIZE,
 
             ptrFirstBloque = traducir_bloque_inodo(ninodo, firstBloqueLogico, 1),
-            ptrLastBloque = traducir_bloque_inodo(ninodo, lastBloqueLogico, 1),
+            ptrLastBloque,// = traducir_bloque_inodo(ninodo, lastBloqueLogico, 1),
             bytesEscritos = 0;
 
     switch (firstBloqueLogico == lastBloqueLogico){
@@ -69,6 +69,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
             // Escribimos sobre el ultimo
             //fprintf(stderr,"Ultimo bloque (%u): En el bloque fisico %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u (%u bytes)\n",lastBloqueLogico, ptrLastBloque, bytesEscritos, 0, lByteRelativo,lByteRelativo+1);
+            ptrLastBloque = traducir_bloque_inodo(ninodo, lastBloqueLogico, 1);
             bread(ptrLastBloque, buffer);
             memcpy(buffer, buf_original+bytesEscritos, lByteRelativo+1);
             bwrite(ptrLastBloque, buffer);
@@ -108,6 +109,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     }
 
     if(offset > inodo.tamEnBytesLog){
+        fprintf(stderr,"Acceso fuera de rango.\n");
         return ACCESO_FUERA_DE_RANGO;
     }
 
@@ -170,6 +172,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     escribir_inodo(inodo,ninodo);
 
+    //fprintf(stderr,"Bytes leidos: %d\n",bytesLeidos);
     return bytesLeidos;
 }
 
@@ -190,6 +193,11 @@ int mi_stat_f(unsigned int ninodo, stat_t *p_stat){
 }
 
 int mi_chmod_f(unsigned int ninodo, unsigned char permisos){
+    if(permisos > ((char) 7)){
+        fprintf(stderr,"El valor %u no se corresponde a ninguna combinacion de permisos.\n",permisos);
+        return PERMISOS_INVALIDOS;
+    }
+
     inodo_t inodo;
     leer_inodo(ninodo, &inodo);
     inodo.permisos = permisos;

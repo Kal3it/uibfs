@@ -1,7 +1,7 @@
 #include "../ficheros_basico/ficheros_basico.h"
 
-#define PERMISOS_INSUFICIENTES -10
-#define ACCESO_FUERA_DE_RANGO -11
+#define PERMISOS_INSUFICIENTES -200
+#define ACCESO_FUERA_DE_RANGO -201
 
 typedef struct STAT {
     unsigned char tipo;
