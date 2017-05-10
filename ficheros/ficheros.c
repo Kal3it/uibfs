@@ -109,7 +109,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
     }
 
     if(offset > inodo.tamEnBytesLog){
-        fprintf(stderr,"Acceso fuera de rango.\n");
+        //fprintf(stderr,"Acceso fuera de rango.\n");
         return ACCESO_FUERA_DE_RANGO;
     }
 

@@ -392,19 +392,26 @@ int mi_stat(const char *camino, struct STAT *p_stat){
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes){;
     struct superbloque sb;
     bread(posSB,&sb);
+    inodo_t inodo;
     unsigned int ninodo;
     int resultado;
 
-    char hit = buscar_entrada_en_cache(camino,&ninodo);
-    if(!hit){
+//    char hit = buscar_entrada_en_cache(camino,&ninodo);
+//    if(!hit){
         resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
+//    }
+
+    leer_inodo(ninodo,&inodo);
+    if(inodo.tipo != TIPO_FICHERO){
+        fprintf(stderr,"%s no es un fichero.\n",camino);
+        return NO_ES_FICHERO;
     }
 
     resultado = mi_read_f(ninodo,buf,offset,nbytes);
     if(resultado < 0) return resultado;
 
-    return 0;
+    return resultado;
 }
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes){
     struct superbloque sb;
@@ -413,11 +420,11 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     inodo_t inodo;
     int resultado;
 
-    char hit = buscar_entrada_en_cache(camino,&ninodo);
-    if(!hit){
+//    char hit = buscar_entrada_en_cache(camino,&ninodo);
+//    if(!hit){
         resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
-    }
+//    }
 
     leer_inodo(ninodo,&inodo);
     if(inodo.tipo != TIPO_FICHERO){
@@ -428,5 +435,5 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     resultado = mi_write_f(ninodo,buf,offset,nbytes);
     if(resultado < 0) return resultado;
 
-    return 0;
+    return resultado;
 }
