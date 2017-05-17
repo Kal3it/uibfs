@@ -633,7 +633,7 @@ int liberar_bloques_inodo(unsigned int ninodo, unsigned int nblogico){
 
     if(inodo.tamEnBytesLog == 0) return 0; // No hay bloques que liberar
 
-    fprintf(stderr,"primer BL: %u, ultimo BL: %u.\n",nblogico,ultimoBlogico);
+    //fprintf(stderr,"primer BL: %u, ultimo BL: %u.\n",nblogico,ultimoBlogico);
     for (unsigned int i = nblogico; i <= ultimoBlogico ; ++i) {
         liberar_bloque_inodo(&inodo, i);
     }

@@ -2,7 +2,7 @@
 
 int main(int argc, char const *argv[]){
     if (argc != 4) {
-        puts("Uso: mi_creat <nombre_dispositivo> <permisos> <path>");
+        puts("Uso: mi_touch <nombre_dispositivo> <permisos> <path>");
         return -1;
     }
 

@@ -3,7 +3,7 @@
 int main(int argc, char const *argv[]){
 
     if (argc != 5) {
-        puts("Uso: escribir <nombre_dispositivo> <\"$(cat fichero)\"> <offset> <pathname>");
+        puts("Uso: mi_escribir <nombre_dispositivo> <\"$(cat fichero)\"> <offset> <pathname>");
         return -1;
     }
 

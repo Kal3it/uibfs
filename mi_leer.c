@@ -2,7 +2,7 @@
 
 int main(int argc, char const *argv[]){
     if (argc != 3) {
-        puts("Uso: leer <nombre_dispositivo> <pathname>");
+        puts("Uso: mi_leer <nombre_dispositivo> <pathname>");
         return -1;
     }
 
@@ -15,7 +15,7 @@ int main(int argc, char const *argv[]){
 
     memset(buffer,0,tamBuffer);
     int respuesta = mi_read(camino, buffer, offset, tamBuffer);
-    while(respuesta >= 0){
+    while(respuesta > 0){
         for (int i = 0; i < respuesta; ++i) {
             printf("%c",buffer[i]);
         }

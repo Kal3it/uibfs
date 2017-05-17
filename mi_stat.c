@@ -14,7 +14,7 @@ void imprimirStat(stat_t stat){
 
 int main(int argc, char const *argv[]){
     if (argc != 3) {
-        puts("Uso: mi_creat <nombre_dispositivo> <path>");
+        puts("Uso: mi_stat <nombre_dispositivo> <path>");
         return -1;
     }
 

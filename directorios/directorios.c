@@ -167,7 +167,7 @@ int buscar_entrada(unsigned int ninodo_root,
         if(esUltimoDir && (pninodo_dir != NULL )&& (pnentrada != NULL)){
             *pninodo_dir = ninodo_root;
             *pnentrada = existeEntrada ? ultimaEntradaLeida : numEntradas;
-            fprintf(stderr,"El ultimo directorio es %u y su entrada es %u\n",ninodo_root,*pnentrada);
+            //fprintf(stderr,"El ultimo directorio es %u y su entrada es %u\n",ninodo_root,*pnentrada);
         }
 
         int respuesta = buscar_entrada(next_ninodo, subdir, pninodo, reservar, permisos, pninodo_dir, pnentrada);
@@ -314,50 +314,48 @@ int mi_link(const char *camino1, const char *camino2){
 }
 
 int mi_unlink(const char *camino){
-    inodo_t inodo,inodo_dir;
+    inodo_t inodo, inodo_dir;
     int resultado;
-    unsigned int ninodo, ninodo_dir, nentrada, nentradas_inodo_dir;
+    unsigned int ninodo = -1, ninodo_dir = -1, nentrada = -1, nentradas_inodo_dir = -1;
     struct superbloque sb;
     bread(posSB,&sb);
 
-    resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, &ninodo_dir, &nentrada); //Obtenemos el nº de entrada
+    resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, &ninodo_dir, &nentrada);
     if(resultado < 0) return resultado;
 
-    leer_inodo(ninodo,&inodo);
+    leer_inodo(ninodo, &inodo);
+    leer_inodo(ninodo_dir, &inodo_dir);
 
-    if (inodo.tipo == TIPO_DIRECTORIO && inodo.tamEnBytesLog > 0) // No es posible borrar
-    {
+    if(inodo.tipo == TIPO_DIRECTORIO && inodo.tamEnBytesLog > 0){
         fprintf(stderr,"No es posible borrar la entrada '%u' porque es un directorio no vacio.\n",nentrada);
         return IMPOSIBLE_BORRAR_ENTRADA;
     }
-	
-	leer_inodo(ninodo_dir,&inodo_dir);
-	nentradas_inodo_dir = inodo_dir.tamEnBytesLog / sizeof(entrada_t);
 
-	int esUltimaEntrada = (nentrada == nentradas_inodo_dir-1);
-	if (esUltimaEntrada)
-	{
-		mi_truncar_f(ninodo_dir,inodo_dir.tamEnBytesLog-sizeof(struct entrada));
-	}
-	else
-	{
-		entrada_t bufferEntradas[nentradas_inodo_dir];
-		
-		bufferEntradas[nentrada] = bufferEntradas[nentradas_inodo_dir-1]; //Dejamos la entrada a eliminar en la última posición
-		mi_truncar_f(ninodo_dir, inodo_dir.tamEnBytesLog-sizeof(entrada_t)); //Borramos la entrada
+    nentradas_inodo_dir = inodo_dir.tamEnBytesLog / sizeof(entrada_t);
 
-		--inodo.nlinks;
-		if (inodo.nlinks == 0)
-		{
-			liberar_inodo(ninodo);
-		}
-		else
-		{
-			inodo.mtime = time(NULL);
-			inodo.ctime = time(NULL);
-			escribir_inodo(inodo, ninodo);
-		}
-	}
+    int esUltimaEntrada = (nentrada == nentradas_inodo_dir-1);
+    if (!esUltimaEntrada)
+    {
+        entrada_t bufferEntradas[nentradas_inodo_dir];
+
+        resultado = mi_read_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
+        if(resultado < 0) return resultado;
+
+        bufferEntradas[nentrada] = bufferEntradas[nentradas_inodo_dir-1];
+
+        resultado = mi_write_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
+        if(resultado < 0) return resultado;
+    }
+
+    mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
+
+    --inodo.nlinks;
+    if (inodo.nlinks == 0)  liberar_inodo(ninodo);
+    else {
+        inodo.mtime = time(NULL);
+        inodo.ctime = time(NULL);
+        escribir_inodo(inodo, ninodo);
+    }
 
     return 0;
 }

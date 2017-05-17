@@ -2,20 +2,16 @@
 
 int main(int argc, char const *argv[]){
     if (argc != 3) {
-        puts("Uso: mi_ls <nombre_dispositivo> <path>");
+        puts("Uso: mi_rm <nombre_dispositivo> <pathname>");
         return -1;
     }
 
     const char *camino = argv[2];
-    char buffer[1000];
     int resultado;
 
     bmount(argv[1]);
 
-    resultado = mi_dir(camino, buffer);
-    if(resultado < 0) return resultado;
-
-    printf("%s",buffer);
+    resultado = mi_unlink(camino);
 
     bumount();
 
