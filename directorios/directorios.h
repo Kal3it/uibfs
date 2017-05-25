@@ -18,16 +18,18 @@ typedef struct entrada {
     unsigned int ninodo;
 } entrada_t;
 
-struct entrada_cache {
+typedef struct entrada_cache {
     char nombre[MAX_TAM_NOMBRE_ENTRADA_CACHE];
     unsigned int ninodo;
-};
+    time_t ultimo_hit;
+} entrada_cache_t;
 
-typedef struct cache_directorios {
-    struct entrada_cache entradas[TAM_CACHE];
-    int ultima_pos;
-    int num_entradas_guardadas ;
-} cache_dir_t;
+typedef struct cache {
+    unsigned int num_entradas_cacheadas;
+    int ultima_entrada_acertada;
+    int entrada_mas_antigua;
+    entrada_cache_t entradas[TAM_CACHE];
+} cache_t;
 
 /**
  * Crea el fichero/directorio

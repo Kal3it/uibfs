@@ -18,7 +18,6 @@ int main(int argc, char const *argv[]){
         fprintf(stderr,"No es posible crear directorios con %s.\n",argv[0]);
         return PATHNAME_INVALIDO;
     }
-    fprintf(stderr,"%s\n",camino);
     resultado = mi_creat(camino, permisos);
 
     bumount();

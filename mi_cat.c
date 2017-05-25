@@ -16,17 +16,17 @@ int main(int argc, char const *argv[]){
     memset(buffer,0,tamBuffer);
     int respuesta = mi_read(camino, buffer, offset, tamBuffer);
     while(respuesta > 0){
-        for (int i = 0; i < respuesta; ++i) {
-            printf("%c",buffer[i]);
-        }
+	    write(1,buffer,tamBuffer);
         bytesLeidos += respuesta;
         offset += tamBuffer;
         memset(buffer,0,tamBuffer);
         respuesta = mi_read(camino, buffer, offset, tamBuffer);
     }
+    write(1,"\n",1);
 
-    fprintf(stderr,"Bytes leidos totales: %u\n",bytesLeidos);
-
+    char infobuff[100];
+    sprintf(infobuff,"%d bytes leidos\n",bytesLeidos);
+    write(2,infobuff, strlen(infobuff));
     bumount();
 
     return 0;

@@ -3,13 +3,13 @@
 int main(int argc, char const *argv[]){
 
     if (argc != 5) {
-        puts("Uso: mi_escribir <nombre_dispositivo> <\"$(cat fichero)\"> <offset> <pathname>");
+        puts("Uso: mi_escribir <nombre_dispositivo> <pathname> <\"$(cat fichero)\"> <offset> ");
         return -1;
     }
 
-    unsigned int offset = atoi(argv[3]);
-    const char *buffer = argv[2];
-    const char *camino = argv[4];
+    unsigned int offset = atoi(argv[4]);
+    const char *buffer = argv[3];
+    const char *camino = argv[2];
     const int len = strlen(buffer);
 
     bmount(argv[1]);

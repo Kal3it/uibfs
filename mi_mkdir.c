@@ -15,7 +15,6 @@ int main(int argc, char const *argv[]){
     bmount(argv[1]);
 
     if(camino[strlen(camino)-1] != '/') strcat(camino,"/");
-    fprintf(stderr,"%s\n",camino);
     resultado = mi_creat(camino, permisos);
 
     bumount();

@@ -1,4 +1,3 @@
-//todo Comentar funciones
 #include <time.h>
 #include <limits.h>
 #include "../bloques/bloques.h"
@@ -16,14 +15,11 @@
 #define TIPO_ENLACE 'l'
 #define TIPO_LIBRE '-'
 
-#define BLOQUE_FUERA_DE_RANGO -4
-#define BLOQUE_LOGICO_FUERA_DE_RANGO -5
-#define BLOQUE_LOGICO_NO_INICIALIZADO -6
-#define NO_QUEDAN_BLOQUES_LIBRES -7
-#define NO_QUEDAN_INODOS_LIBRES -8
-#define INODO_YA_LIBERADO -9
-#define BLOQUE_FISICO_YA_LIBERADO -10
-#define PERMISOS_INVALIDOS -11
+#define BLOQUE_LOGICO_NO_INICIALIZADO -5
+#define NO_QUEDAN_BLOQUES_LIBRES -6
+#define NO_QUEDAN_INODOS_LIBRES -7
+#define PERMISOS_INVALIDOS -8
+#define BLOQUE_LOGICO_FUERA_DE_RANGO -9
 
 struct superbloque{
     unsigned int posPrimerBloqueMB;     //Posición del primer bloque del mapa de bits

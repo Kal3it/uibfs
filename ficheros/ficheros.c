@@ -3,11 +3,11 @@
 int tiene_permiso(char permisos_inodo, char permiso_comprobado){
     switch (permiso_comprobado){
         case 'r':
-            return permisos_inodo & 4;
+            return (permisos_inodo & 4) == 4; //todo: (permisos_inodo & 4) o (permisos_inodo & 4 == 4)
         case 'w':
-            return permisos_inodo & 2;
+            return (permisos_inodo & 2) == 2;
         case 'x':
-            return permisos_inodo & 1;
+            return (permisos_inodo & 1) == 1;
     }
     fprintf(stderr,"No existe el permiso %c\n",permiso_comprobado);
     exit(-1);
@@ -76,11 +76,11 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
             bytesEscritos += lByteRelativo+1;
             break;
     }
-    //fprintf(stderr,"Bytes escritos: %d\n",bytesEscritos);
 
     leer_inodo(ninodo, &inodo); // Leemos el inodo actualizado (es posible que se hayan actualizado los punteros a bloques)
+
     //fprintf(stderr,"Antiguo tamaño: %u\n",inodo.tamEnBytesLog);
-    if(lastByte+1 > inodo.tamEnBytesLog){//todo: es asi?
+    if(lastByte+1 > inodo.tamEnBytesLog){
         inodo.tamEnBytesLog = lastByte+1;
         inodo.ctime = time(NULL);
     }
@@ -108,7 +108,7 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
         return 0;
     }
 
-    if(offset > inodo.tamEnBytesLog){
+    if(inodo.tamEnBytesLog == 0 || offset > inodo.tamEnBytesLog){
         //fprintf(stderr,"Acceso fuera de rango.\n");
         return ACCESO_FUERA_DE_RANGO;
     }
@@ -172,7 +172,6 @@ int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsi
 
     escribir_inodo(inodo,ninodo);
 
-    //fprintf(stderr,"Bytes leidos: %d\n",bytesLeidos);
     return bytesLeidos;
 }
 
