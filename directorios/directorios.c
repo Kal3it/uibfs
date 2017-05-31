@@ -176,10 +176,7 @@ int buscar_entrada(unsigned int ninodo_root,
                 dir[MAX_TAM_NOMBRE_ENTRADA],
                 existeEntrada = 0,
                 tipo = -1;
-        const int TAM_BUFFER = numEntradas + 1; // +1 entrada por si hay que crearla
         const char *subdir;
-
-        entrada_t buffer[TAM_BUFFER];
 
         if((reservar && (inodo_root.permisos & 6) != 6)/* reservar & no rw */ || (!reservar && (inodo_root.permisos & 4) != 4) /* no reservar & no r */){
             fprintf(stderr,"Permisos insuficientes.\n");
@@ -193,31 +190,13 @@ int buscar_entrada(unsigned int ninodo_root,
         tipo = extraer_camino(pathname, dir, &subdir);
         if(((int) tipo) == PATHNAME_INVALIDO) return PATHNAME_INVALIDO;
 
-//        fprintf(stderr,"Buscando en el directorio con numero de inodo %u la entrada %s\n",ninodo_root,dir);
-
-        /* Buscar entrada dir en inodo_root y recuperar el numero de entrada y el ninodo */
-        mi_read_f(ninodo_root, buffer, 0, inodo_root.tamEnBytesLog); //todo Cuidado si el directorio tiene gigas en entradas...
-        while(ultimaEntradaLeida < numEntradas && !existeEntrada) {
-            existeEntrada = !strcmp(buffer[ultimaEntradaLeida].nombre, dir);
-//            fprintf(stderr,"Se lee la entrada del directorio %s y se compara con la nuestra %s\n",buffer[ultimaEntradaLeida].nombre,dir);
-
-            if(existeEntrada){
-                next_ninodo = buffer[ultimaEntradaLeida].ninodo;
-            }
-
-            ++ultimaEntradaLeida;
-        }
-        --ultimaEntradaLeida;
+        existeEntrada = buscar_entrada_directorio(ninodo_root, dir, &next_ninodo, &ultimaEntradaLeida);
 
         esUltimoDir = strcmp(subdir,"/") == 0;
 
         if(!existeEntrada){
             if(reservar && strcmp(subdir,"/") == 0){ // Si reservar y es la ultima entrada, creamos entrada
-                buffer[numEntradas].ninodo = reservar_inodo(tipo,permisos); // se crea en la posicion adicional
-                strcpy(buffer[numEntradas].nombre,dir);
-                mi_write_f(ninodo_root,buffer,0,TAM_BUFFER * sizeof(entrada_t));
-                next_ninodo = buffer[numEntradas].ninodo;
-                printf("Creado el ninodo %u en la entrada %u con nombre '%s'.\n",buffer[numEntradas].ninodo,numEntradas,buffer[numEntradas].nombre);
+                crear_entrada_directorio(ninodo_root, dir, tipo, permisos, &next_ninodo);
             } else {
                 fprintf(stderr,"El fichero o directorio '%s' no existe.\n",dir);
                 return NO_EXISTE_ENTRADA;
@@ -356,6 +335,7 @@ int mi_link(const char *camino1, const char *camino2){
     if(resultado < 0) return resultado;
 
     bufferEntradas[nentrada].ninodo = ninodo_fichero;
+    //fprintf(stderr,"bufferEntradas[%u].ninodo = %u\n",nentrada,bufferEntradas[nentrada].ninodo);
     mi_write_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
 
     // Actualizamos info inodo_fichero
