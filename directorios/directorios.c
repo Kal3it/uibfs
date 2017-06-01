@@ -1,6 +1,7 @@
 #include "directorios.h"
 
-cache_t cache = { .num_entradas_cacheadas = 0, .entrada_mas_antigua = 0, .ultima_entrada_acertada = 0};
+cache_t cache_read = { .num_entradas_cacheadas = 0, .entrada_mas_antigua = 0, .ultima_entrada_acertada = 0};
+cache_t cache_write = { .num_entradas_cacheadas = 0, .entrada_mas_antigua = 0, .ultima_entrada_acertada = 0};
 
 char extraer_camino(const char *camino, char *inicial, const char **final) {
 
@@ -42,47 +43,47 @@ char extraer_camino(const char *camino, char *inicial, const char **final) {
     return tipo;
 }
 
-void actualizar_cache(const char *camino, unsigned int ninodo){
+void actualizar_cache(const char *camino, unsigned int ninodo, cache_t *cache){
 
-    if (cache.num_entradas_cacheadas < TAM_CACHE) {
+    if (cache->num_entradas_cacheadas < TAM_CACHE) {
         entrada_cache_t nuevaEntrada;
         nuevaEntrada.ninodo = ninodo;
         strcpy(nuevaEntrada.nombre,camino);
         nuevaEntrada.ultimo_hit = time(NULL);
 
-        cache.entradas[cache.num_entradas_cacheadas] = nuevaEntrada;
-        ++cache.num_entradas_cacheadas;
+        cache->entradas[cache->num_entradas_cacheadas] = nuevaEntrada;
+        ++cache->num_entradas_cacheadas;
 
     } else {
-        cache.entradas[cache.entrada_mas_antigua].ninodo = ninodo;
-        strcpy(cache.entradas[cache.entrada_mas_antigua].nombre,camino);
-        cache.entradas[cache.entrada_mas_antigua].ultimo_hit = time(NULL);
+        cache->entradas[cache->entrada_mas_antigua].ninodo = ninodo;
+        strcpy(cache->entradas[cache->entrada_mas_antigua].nombre,camino);
+        cache->entradas[cache->entrada_mas_antigua].ultimo_hit = time(NULL);
 
     }
 }
 
-char buscar_entrada_en_cache(const char *camino, unsigned int *ninodo){
+char buscar_entrada_en_cache(const char *camino, unsigned int *ninodo, cache_t *cache){
     entrada_cache_t entrada;
     int indice_entrada;
     char hit = 0;
 
-    for (int i = 0; i < cache.num_entradas_cacheadas && !hit; ++i) {
-        indice_entrada = (i+cache.ultima_entrada_acertada) % cache.num_entradas_cacheadas;
+    for (int i = 0; i < cache->num_entradas_cacheadas && !hit; ++i) {
+        indice_entrada = (i+cache->ultima_entrada_acertada) % cache->num_entradas_cacheadas;
 
-        entrada = cache.entradas[indice_entrada];
+        entrada = cache->entradas[indice_entrada];
         hit = !strcmp(entrada.nombre, camino);
 
-        if(cache.entradas[cache.entrada_mas_antigua].ultimo_hit > cache.entradas[indice_entrada].ultimo_hit){
-            cache.entrada_mas_antigua = indice_entrada;
+        if(cache->entradas[cache->entrada_mas_antigua].ultimo_hit > cache->entradas[indice_entrada].ultimo_hit){
+            cache->entrada_mas_antigua = indice_entrada;
         }
 
-        //fprintf(stderr,"Entrada encontrada en el indice %d. Entrada: %s, Ninodo: %d\n",indice_entrada,cache.entradas[indice_entrada].nombre,cache.entradas[indice_entrada].ninodo);
+        //fprintf(stderr,"Entrada encontrada en el indice %d. Entrada: %s, Ninodo: %d\n",indice_entrada,cache->entradas[indice_entrada].nombre,cache->entradas[indice_entrada].ninodo);
     }
 
     if(hit){
-        cache.entradas[indice_entrada].ultimo_hit = time(NULL);
-        cache.ultima_entrada_acertada = indice_entrada;
-        *ninodo = cache.entradas[indice_entrada].ninodo;
+        cache->entradas[indice_entrada].ultimo_hit = time(NULL);
+        cache->ultima_entrada_acertada = indice_entrada;
+        *ninodo = cache->entradas[indice_entrada].ninodo;
     }
 
     return hit;
@@ -92,7 +93,7 @@ char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsig
     unsigned int
             max_entradas = 10,
             offset = 0,
-            tamBuffer = max_entradas * sizeof(inodo_t),
+            tamBuffer = max_entradas * sizeof(entrada_t),
             numEntrada = 0,
             entradas_leidas = 0;
 
@@ -429,11 +430,11 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     unsigned int ninodo;
     int resultado;
 
-    char hit = buscar_entrada_en_cache(camino, &ninodo);
+    char hit = buscar_entrada_en_cache(camino, &ninodo, &cache_read);
     if(!hit){
         resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
-        actualizar_cache(camino, ninodo);
+        actualizar_cache(camino, ninodo, &cache_read);
     }
 
     leer_inodo(ninodo,&inodo);
@@ -453,12 +454,12 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     inodo_t inodo;
     int resultado;
 
-    char hit = buscar_entrada_en_cache(camino,&ninodo);
+    char hit = buscar_entrada_en_cache(camino,&ninodo, &cache_write);
     if(!hit){
         resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
 
-        actualizar_cache(camino, ninodo);
+        actualizar_cache(camino, ninodo, &cache_write);
     }
 
     leer_inodo(ninodo,&inodo);
