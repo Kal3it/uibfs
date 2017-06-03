@@ -222,7 +222,6 @@ int buscar_entrada(unsigned int ninodo_root,
 }
 
 int mi_creat(const char *camino, unsigned char permisos){
-    mi_waitSem();
 
     unsigned int ninodo;
     struct superbloque sb;
@@ -231,7 +230,6 @@ int mi_creat(const char *camino, unsigned char permisos){
     int resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 1, permisos, NULL, NULL);
 
     //printf("fichero o directorio %s creado\n",camino);
-    mi_signalSem();
 
     return resultado;
 }
@@ -248,10 +246,10 @@ int mi_dir(const char *camino, char *buffer){
     leer_inodo(ninodo,&inodo);
 
     // Comprobamos errores
-//    if((inodo.permisos & 2) != 2) /* r */{
-//        fprintf(stderr,"El fichero '%s' no tiene permisos de lectura.\n",camino);
-//        return PERMISOS_INSUFICIENTES;
-//    }
+    if((inodo.permisos & 2) != 2) /* r */{
+        fprintf(stderr,"El fichero '%s' no tiene permisos de lectura.\n",camino);
+        return PERMISOS_INSUFICIENTES;
+    }
     if(inodo.tipo != TIPO_DIRECTORIO){
         fprintf(stderr,"%s no es un directorio!\n",camino);
         return NO_ES_DIRECTORIO;

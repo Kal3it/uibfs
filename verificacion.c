@@ -1,8 +1,7 @@
 #include "directorios/directorios.h"
 
 void imprimirRegistro(struct registro reg){
-    //printf("Time: %s\n",asctime(localtime(&reg.time)));
-    printf("Time: %lu, ",reg.time);
+    printf("Time: %s\n",asctime(localtime(&reg.time)));
     printf("PID: %u, ",reg.pid);
     printf("Posicion: %u, ",reg.posicion);
     printf("Numero de escritura: %u\n",reg.nEscritura);
@@ -17,7 +16,7 @@ int main(int argc, char const *argv[]) {
     bmount(argv[1]);
 
     const char *camino = argv[2];
-    const int NUM_ENTRADAS_PROCESOS = 50;
+    const int NUM_ENTRADAS_PROCESOS = 80;
 
     entrada_t buffer_entradas[NUM_ENTRADAS_PROCESOS];
     int n_entradas_leidas = mi_dir_simple(camino,&buffer_entradas);
@@ -94,6 +93,8 @@ int main(int argc, char const *argv[]) {
         imprimirRegistro(menor_pos);
         printf("Numero de registros validos: %u\n", num_registros_validos);
         puts("");
+
+        // TODO informe
     }
 
     bumount();
