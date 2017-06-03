@@ -7,7 +7,7 @@ int main(int argc, char const *argv[]){
     }
 
     const char *camino = argv[2];
-    char buffer[1000];
+    char buffer[1000000];
     int resultado;
 
     bmount(argv[1]);

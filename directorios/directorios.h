@@ -1,4 +1,5 @@
 #include <string.h>
+#include <sys/types.h>
 #include "../ficheros/ficheros.h"
 
 #define MAX_ENTRADAS BLOCKSIZE/sizeof(entrada_t)
@@ -31,6 +32,14 @@ typedef struct cache {
     entrada_cache_t entradas[TAM_CACHE];
 } cache_t;
 
+struct registro
+{
+    pid_t pid;
+    time_t time;
+    unsigned int nEscritura;
+    unsigned int posicion;
+};
+
 /**
  * Crea el fichero/directorio
  * @param camino
@@ -39,6 +48,7 @@ typedef struct cache {
  */
 int mi_creat(const char *camino, unsigned char permisos);
 int mi_dir(const char *camino, char *buffer);
+int mi_dir_simple(const char *camino, void *buffer_entradas);
 int mi_link(const char *camino1, const char *camino2);
 int mi_unlink(const char *camino);
 int mi_chmod(const char *camino, unsigned char permisos);

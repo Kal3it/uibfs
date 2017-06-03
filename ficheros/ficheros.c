@@ -28,6 +28,11 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
         return PERMISOS_INSUFICIENTES;
     }
 
+    if(offset+nbytes-1 > TAM_MAX_FICHERO){
+        fprintf(stderr,"Acceso fuera de rango.\n");
+        return ACCESO_FUERA_DE_RANGO;
+    }
+
     char buffer[BLOCKSIZE];
     unsigned int
             firstByte = offset,

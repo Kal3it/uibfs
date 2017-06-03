@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <string.h>
 #include <fcntl.h> /* Modos de apertura y función open()*/
+#include "../semaforo_mutex_posix.h"
 
 
 #define BLOCKSIZE 1024 //bytes
@@ -41,4 +42,6 @@ int bwrite(unsigned int nbloque, const void *buf);
  */
 int bread(unsigned int nbloque, void *buf);
 
+void mi_waitSem();
+void mi_signalSem();
 

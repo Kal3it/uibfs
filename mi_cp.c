@@ -31,13 +31,17 @@ int main(int argc, char const *argv[]){
     mi_creat(camino2,stat_camino1.permisos);
     if(respuesta < 0) return respuesta;
 
+    const char CENTINELA = 255;
     memset(buffer,0,tamBuffer);
+    buffer[0] = CENTINELA; buffer[tamBuffer / 2] = CENTINELA; buffer[tamBuffer - 1] = CENTINELA;
     respuesta = mi_read(camino1, buffer, offset, tamBuffer);
     while(respuesta > 0){
-        mi_write(camino2,buffer,offset,respuesta);
+        if (buffer[0] != CENTINELA){ mi_write(camino2,buffer,offset,respuesta); }
+        else printf("Bloque logico %u no inicializado, skipping\n",offset/tamBuffer);
         bytesCopiados += respuesta;
         offset += tamBuffer;
         memset(buffer,0,tamBuffer);
+        buffer[0] = CENTINELA; buffer[tamBuffer / 2] = CENTINELA; buffer[tamBuffer - 1] = CENTINELA;
         respuesta = mi_read(camino1, buffer, offset, tamBuffer);
     }
 
