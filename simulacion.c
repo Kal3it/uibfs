@@ -85,7 +85,6 @@ int main (int argc, char *argv[]) {
     // Lanzamos los procesos
     for (int i = 0; i < NPROCESOS; ++i) {
         forker(i, dir_simulacion);
-        wait(NULL);
     }
 
     wait(NULL);
