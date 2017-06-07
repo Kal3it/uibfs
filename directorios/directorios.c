@@ -162,9 +162,8 @@ int buscar_entrada(unsigned int ninodo_root,
 
     int esUltimoDir;
     unsigned int numEntradas, ultimaEntradaLeida, next_ninodo;
-    char *dir, existeEntrada, tipo;
+    char existeEntrada, tipo, dir[MAX_TAM_NOMBRE_ENTRADA];
     const char *subdir;
-    dir = malloc(MAX_TAM_NOMBRE_ENTRADA);
 
     while(strcmp(pathname,"/") != 0){
 
@@ -216,19 +215,17 @@ int buscar_entrada(unsigned int ninodo_root,
         pathname = subdir;
     }
 
-    free(dir);
     *pninodo = ninodo_root;
     return 0;
 }
 
 int mi_creat(const char *camino, unsigned char permisos){
-    mi_waitSem(SEM_DIRECTORIOS);
-
     unsigned int ninodo;
 
+    mi_waitSem(SEM_DIRECTORIOS);
     int resultado = buscar_entrada(0, camino, &ninodo, 1, permisos, NULL, NULL);
-
     mi_signalSem(SEM_DIRECTORIOS);
+
     return resultado;
 }
 
@@ -324,8 +321,6 @@ int mi_dir_simple(const char *camino, void *buffer_entradas){
 }
 
 int mi_link(const char *camino1, const char *camino2){
-    mi_waitSem(SEM_DIRECTORIOS);
-
     inodo_t inodo_fichero, inodo_dir;
     int resultado;
     unsigned int ninodo_fichero, ninodo_enlace, ninodo_dir, nentrada;
@@ -349,6 +344,7 @@ int mi_link(const char *camino1, const char *camino2){
         return NO_ES_FICHERO;
     }
 
+    mi_waitSem(SEM_DIRECTORIOS);
     resultado = buscar_entrada(0, camino2, &ninodo_enlace, 1, 7, &ninodo_dir, &nentrada);
     if(resultado < 0){
         mi_signalSem(SEM_DIRECTORIOS);
@@ -356,6 +352,7 @@ int mi_link(const char *camino1, const char *camino2){
     }
 
     liberar_inodo(ninodo_enlace);
+    mi_signalSem(SEM_DIRECTORIOS);
 
     // Actualizamos entrada
     leer_inodo(ninodo_dir,&inodo_dir);
@@ -363,7 +360,6 @@ int mi_link(const char *camino1, const char *camino2){
 
     resultado = mi_read_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
     if(resultado < 0){
-        mi_signalSem(SEM_DIRECTORIOS);
         return resultado;
     }
 
@@ -372,6 +368,7 @@ int mi_link(const char *camino1, const char *camino2){
     mi_write_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
 
     // Actualizamos info inodo_fichero
+    mi_waitSem(SEM_DIRECTORIOS);
     //fprintf(stderr,"Actualizamos datos del ninodo %u\n", ninodo_fichero);
     leer_inodo(ninodo_fichero, &inodo_fichero);
     ++inodo_fichero.nlinks;
@@ -383,8 +380,6 @@ int mi_link(const char *camino1, const char *camino2){
 }
 
 int mi_unlink(const char *camino){
-    mi_waitSem(SEM_DIRECTORIOS);
-
     inodo_t inodo, inodo_dir;
     int resultado;
     unsigned int ninodo = -1, ninodo_dir = -1, nentrada = -1, nentradas_inodo_dir = -1;
@@ -425,7 +420,7 @@ int mi_unlink(const char *camino){
             return resultado;
         }
     }
-
+    mi_waitSem(SEM_DIRECTORIOS);
     mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
 
     --inodo.nlinks;
@@ -466,17 +461,20 @@ int mi_stat(const char *camino, struct STAT *p_stat){
 
     return 0;
 }
+
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes){
     inodo_t inodo;
     unsigned int ninodo;
     int resultado;
 
+    mi_waitSem(SEM_DIRECTORIOS);
     char hit = buscar_entrada_en_cache(camino, &ninodo, &cache_read);
     if(!hit){
         resultado = buscar_entrada(0, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
         actualizar_cache(camino, ninodo, &cache_read);
     }
+    mi_signalSem(SEM_DIRECTORIOS);
 
     leer_inodo(ninodo,&inodo);
     if(inodo.tipo != TIPO_FICHERO){
@@ -489,28 +487,27 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     return resultado;
 }
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes){
-    mi_waitSem(SEM_DIRECTORIOS);// todo los problemas vienen de poner este semaforo abajo
     unsigned int ninodo;
     inodo_t inodo;
     int resultado;
 
+    mi_waitSem(SEM_DIRECTORIOS);
     char hit = buscar_entrada_en_cache(camino,&ninodo, &cache_write);
     if(!hit){
         resultado = buscar_entrada(0, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
         actualizar_cache(camino, ninodo, &cache_write);
-    }
 
-//    mi_waitSem(SEM_DIRECTORIOS);
+    }
+    mi_signalSem(SEM_DIRECTORIOS);
+
     leer_inodo(ninodo,&inodo);
     if(inodo.tipo != TIPO_FICHERO){
         fprintf(stderr,"%s no es un fichero.\n",camino);
         return NO_ES_FICHERO;
     }
 
-
     resultado = mi_write_f(ninodo,buf,offset,nbytes);
-    mi_signalSem(SEM_DIRECTORIOS);
 
     return resultado;
 }

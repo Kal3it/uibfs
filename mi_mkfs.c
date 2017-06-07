@@ -19,7 +19,7 @@ int main(int argc, char const *argv[])
     unsigned char buf[BLOCKSIZE];
 	memset(buf,0,BLOCKSIZE);
 
-	for (int i = 0; i < nbloques; ++i) bwrite(i,buf); // Todo: limpiar todos los bloques con 0?
+	for (int i = 0; i < nbloques; ++i) bwrite(i,buf);
 
 	unsigned int ninodos = nbloques/4;
     initSB(nbloques, ninodos);

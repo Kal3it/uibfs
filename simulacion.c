@@ -3,7 +3,7 @@
 #include "directorios/directorios.h"
 
 #define NPROCESOS  100
-#define POS_MAX 50000
+#define POS_MAX 500000
 #define SLEEP_PROCESS 0
 #define SLEEP_WRITE 0
 
@@ -25,7 +25,7 @@ int write_randomly(char *filepath){
         reg.time = time(NULL);
         reg.posicion=(rand()%POS_MAX)* sizeof(struct registro); // multiplo de sizeof(registro)
 
-//        printf("%u escribe registro %u en posicion %u en el instante %lu\n",reg.pid,reg.nEscritura,reg.posicion,reg.time);
+        //printf("%u escribe registro %u en posicion %u en el instante %lu\n",reg.pid,reg.nEscritura,reg.posicion,reg.time);
 
         resultado = mi_write(filepath, &reg, reg.posicion, sizeof(struct registro));
         if(resultado < 0){
@@ -39,11 +39,11 @@ int write_randomly(char *filepath){
 }
 
 int writer(int id, char *dir) {
-    char *filepath = (char *) malloc(100);
+    char filepath[100];
     sprintf(filepath,"%sproceso_%d/",dir,getpid());
     int resultado;
 
-    //printf("%d creando el directorio '%s'\n", getpid(), filepath);
+//    printf("%d creando el directorio '%s'\n", getpid(), filepath);
     resultado = mi_creat(filepath, 7);
     if(resultado < 0){
         return resultado;
@@ -60,8 +60,6 @@ int writer(int id, char *dir) {
     if(resultado < 0){
         return resultado;
     }
-
-    free(filepath);
 
     return 0;
 }
@@ -101,13 +99,13 @@ int main (int argc, char *argv[]) {
     time(&now);
     struct tm *ts = localtime(&now);
     char str_time[80];
-    strftime(str_time, 80, "simul_%Y%m%d%H%M%S", ts); // todo SIZEOF?
+    strftime(str_time, 80, "simul_%Y%m%d%H%M%S", ts);
     char dir_simulacion[80];
     sprintf(dir_simulacion,"/%s/",str_time);
     mi_creat(dir_simulacion,7);
     bumount();
 
-    usleep(100000);
+    //usleep(10);
     // Lanzamos los procesos
     for (int i = 0; i < NPROCESOS; ++i) {
         forker(argv[1], i, dir_simulacion);

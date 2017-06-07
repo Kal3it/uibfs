@@ -16,7 +16,7 @@ int main(int argc, char const *argv[]){
     memset(buffer,0,tamBuffer);
     int respuesta = mi_read(camino, buffer, offset, tamBuffer);
     while(respuesta > 0){
-	    write(1,buffer,tamBuffer);
+	    write(1,buffer,respuesta);
         bytesLeidos += respuesta;
         offset += tamBuffer;
         memset(buffer,0,tamBuffer);
