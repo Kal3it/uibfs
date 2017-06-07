@@ -509,14 +509,13 @@ int liberar_bloques_recursivo(unsigned int ptrBloqueIndice, int indirecciones_re
     }
 
     if(liberar){
-        liberar_bloque(bufferBloqueIndice[indice]);
-
         bufferBloqueIndice[indice] = 0;
         bwrite(ptrBloqueIndice, bufferBloqueIndice);
 
         --inodo->numBloquesOcupados;
         inodo->ctime = time(NULL);
 
+        liberar_bloque(bufferBloqueIndice[indice]);
     }
 
     return 0;

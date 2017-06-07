@@ -1,12 +1,13 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
 
-#define SEM_NAME "/mymutex" /* Usamos este nombre para el semáforo mutex */
-#define SEM_INIT_VALUE 1 /* Valor inicial de los mutex */
+#define SEM_FICHEROS 0
+#define SEM_DIRECTORIOS 1
 
-sem_t *initSem();
-void deleteSem();
-void signalSem(sem_t *sem);
-void waitSem(sem_t *sem);
+int initSem(int sem_level);
+void deleteSem(int sem_level);
+void signalSem(int sem_level);
+void waitSem(int sem_level);

@@ -1,5 +1,7 @@
 #include "directorios/directorios.h"
 
+#define NUM_ENTRADAS_PROCESOS 100
+
 void imprimirRegistro(struct registro reg){
     printf("Time: %s\n",asctime(localtime(&reg.time)));
     printf("PID: %u, ",reg.pid);
@@ -16,7 +18,6 @@ int main(int argc, char const *argv[]) {
     bmount(argv[1]);
 
     const char *camino = argv[2];
-    const int NUM_ENTRADAS_PROCESOS = 80;
 
     entrada_t buffer_entradas[NUM_ENTRADAS_PROCESOS];
     int n_entradas_leidas = mi_dir_simple(camino,&buffer_entradas);
@@ -26,7 +27,7 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
     if (n_entradas_leidas != NUM_ENTRADAS_PROCESOS){
-        fprintf(stderr,"El directorio debe tener %d entradas exactamente, tiene %d\n", NUM_ENTRADAS_PROCESOS, n_entradas_leidas);
+        fprintf(stderr,"El directorio debe tener %u entradas exactamente, tiene %d\n", NUM_ENTRADAS_PROCESOS, n_entradas_leidas);
         return -1;
     }
 

@@ -42,6 +42,5 @@ int bwrite(unsigned int nbloque, const void *buf);
  */
 int bread(unsigned int nbloque, void *buf);
 
-void mi_waitSem();
-void mi_signalSem();
-
+void mi_waitSem(int sem_level);
+void mi_signalSem(int sem_level);

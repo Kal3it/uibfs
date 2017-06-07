@@ -44,7 +44,7 @@ int main(int argc, char const *argv[]){
             mi_write(camino2,buffer,offset,respuesta);
             memset(buffer,0,tamBuffer);
         }
-        else printf("Bloque logico %u no inicializado, skipping\n",offset/tamBuffer);
+        //else printf("Bloque logico %u no inicializado, skipping\n",offset/tamBuffer);
 
         bytesCopiados += respuesta;
         offset += tamBuffer;

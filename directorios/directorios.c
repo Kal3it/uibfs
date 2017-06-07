@@ -160,25 +160,22 @@ int buscar_entrada(unsigned int ninodo_root,
                    unsigned int *pninodo_dir,
                    unsigned int *pnentrada){
 
-    if(strcmp(pathname,"/") == 0){
-        *pninodo = ninodo_root;
-        return 0;
+    int esUltimoDir;
+    unsigned int numEntradas, ultimaEntradaLeida, next_ninodo;
+    char *dir, existeEntrada, tipo;
+    const char *subdir;
+    dir = malloc(MAX_TAM_NOMBRE_ENTRADA);
 
-    } else {
+    while(strcmp(pathname,"/") != 0){
 
         inodo_t inodo_root;
         leer_inodo(ninodo_root, &inodo_root);
 
-        int esUltimoDir;
-        unsigned int
-                numEntradas = inodo_root.tamEnBytesLog / sizeof(entrada_t),
-                ultimaEntradaLeida = 0,
-                next_ninodo = -1;
-        char
-                dir[MAX_TAM_NOMBRE_ENTRADA],
-                existeEntrada = 0,
-                tipo = -1;
-        const char *subdir;
+        numEntradas = inodo_root.tamEnBytesLog / sizeof(entrada_t);
+        ultimaEntradaLeida = 0;
+        next_ninodo = -1;
+        existeEntrada = 0;
+        tipo = -1;
 
         if((reservar && (inodo_root.permisos & 6) != 6)/* reservar & no rw */ || (!reservar && (inodo_root.permisos & 4) != 4) /* no reservar & no r */){
             fprintf(stderr,"Permisos insuficientes.\n");
@@ -215,32 +212,31 @@ int buscar_entrada(unsigned int ninodo_root,
             //fprintf(stderr,"El ultimo directorio es %u y su entrada es %u\n",ninodo_root,*pnentrada);
         }
 
-        int respuesta = buscar_entrada(next_ninodo, subdir, pninodo, reservar, permisos, pninodo_dir, pnentrada);
-
-        return respuesta;
+        ninodo_root = next_ninodo;
+        pathname = subdir;
     }
+
+    free(dir);
+    *pninodo = ninodo_root;
+    return 0;
 }
 
 int mi_creat(const char *camino, unsigned char permisos){
+    mi_waitSem(SEM_DIRECTORIOS);
 
     unsigned int ninodo;
-    struct superbloque sb;
-    bread(posSB,&sb);
 
-    int resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 1, permisos, NULL, NULL);
+    int resultado = buscar_entrada(0, camino, &ninodo, 1, permisos, NULL, NULL);
 
-    //printf("fichero o directorio %s creado\n",camino);
-
+    mi_signalSem(SEM_DIRECTORIOS);
     return resultado;
 }
 
 int mi_dir(const char *camino, char *buffer){
     unsigned int ninodo;
     inodo_t inodo;
-    struct superbloque sb;
-    bread(posSB,&sb);
 
-    int resultado = buscar_entrada(sb.posInodoRaiz,camino,&ninodo,0,0, NULL, NULL);
+    int resultado = buscar_entrada(0,camino,&ninodo,0,0, NULL, NULL);
     if(resultado < 0) return resultado;
 
     leer_inodo(ninodo,&inodo);
@@ -311,10 +307,8 @@ int mi_dir(const char *camino, char *buffer){
 int mi_dir_simple(const char *camino, void *buffer_entradas){
     unsigned int ninodo;
     inodo_t inodo;
-    struct superbloque sb;
-    bread(posSB,&sb);
 
-    int resultado = buscar_entrada(sb.posInodoRaiz,camino,&ninodo,0,0, NULL, NULL);
+    int resultado = buscar_entrada(0,camino,&ninodo,0,0, NULL, NULL);
     if(resultado < 0) return resultado;
     leer_inodo(ninodo,&inodo);
 
@@ -330,28 +324,36 @@ int mi_dir_simple(const char *camino, void *buffer_entradas){
 }
 
 int mi_link(const char *camino1, const char *camino2){
+    mi_waitSem(SEM_DIRECTORIOS);
+
     inodo_t inodo_fichero, inodo_dir;
     int resultado;
     unsigned int ninodo_fichero, ninodo_enlace, ninodo_dir, nentrada;
-    struct superbloque sb;
-    bread(posSB,&sb);
 
-    resultado = buscar_entrada(sb.posInodoRaiz, camino1, &ninodo_fichero, 0, 0, NULL, NULL);
-    if(resultado < 0) return resultado;
+    resultado = buscar_entrada(0, camino1, &ninodo_fichero, 0, 0, NULL, NULL);
+    if(resultado < 0){
+        mi_signalSem(SEM_DIRECTORIOS);
+        return resultado;
+    }
 
     // Comprobamos errores
     leer_inodo(ninodo_fichero,&inodo_fichero);
     if((inodo_fichero.permisos & 2) != 2) /* r */{
+        mi_signalSem(SEM_DIRECTORIOS);
         fprintf(stderr,"El fichero '%s' no tiene permisos de lectura.\n",camino1);
         return PERMISOS_INSUFICIENTES;
     }
     if(inodo_fichero.tipo != TIPO_FICHERO){
+        mi_signalSem(SEM_DIRECTORIOS);
         fprintf(stderr,"%s no es un fichero!\n",camino1);
         return NO_ES_FICHERO;
     }
 
-    resultado = buscar_entrada(sb.posInodoRaiz, camino2, &ninodo_enlace, 1, 7, &ninodo_dir, &nentrada);
-    if(resultado < 0) return resultado;
+    resultado = buscar_entrada(0, camino2, &ninodo_enlace, 1, 7, &ninodo_dir, &nentrada);
+    if(resultado < 0){
+        mi_signalSem(SEM_DIRECTORIOS);
+        return resultado;
+    }
 
     liberar_inodo(ninodo_enlace);
 
@@ -360,7 +362,10 @@ int mi_link(const char *camino1, const char *camino2){
     entrada_t bufferEntradas[inodo_dir.tamEnBytesLog / sizeof(entrada_t)];
 
     resultado = mi_read_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
-    if(resultado < 0) return resultado;
+    if(resultado < 0){
+        mi_signalSem(SEM_DIRECTORIOS);
+        return resultado;
+    }
 
     bufferEntradas[nentrada].ninodo = ninodo_fichero;
     //fprintf(stderr,"bufferEntradas[%u].ninodo = %u\n",nentrada,bufferEntradas[nentrada].ninodo);
@@ -373,23 +378,28 @@ int mi_link(const char *camino1, const char *camino2){
     inodo_fichero.ctime = time(NULL);
     escribir_inodo(inodo_fichero, ninodo_fichero);
 
+    mi_signalSem(SEM_DIRECTORIOS);
     return 0;
 }
 
 int mi_unlink(const char *camino){
+    mi_waitSem(SEM_DIRECTORIOS);
+
     inodo_t inodo, inodo_dir;
     int resultado;
     unsigned int ninodo = -1, ninodo_dir = -1, nentrada = -1, nentradas_inodo_dir = -1;
-    struct superbloque sb;
-    bread(posSB,&sb);
 
-    resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, &ninodo_dir, &nentrada);
-    if(resultado < 0) return resultado;
+    resultado = buscar_entrada(0, camino, &ninodo, 0, 0, &ninodo_dir, &nentrada);
+    if(resultado < 0){
+        mi_signalSem(SEM_DIRECTORIOS);
+        return resultado;
+    }
 
     leer_inodo(ninodo, &inodo);
     leer_inodo(ninodo_dir, &inodo_dir);
 
     if(inodo.tipo == TIPO_DIRECTORIO && inodo.tamEnBytesLog > 0){
+        mi_signalSem(SEM_DIRECTORIOS);
         fprintf(stderr,"No es posible borrar la entrada '%u' porque es un directorio no vacio.\n",nentrada);
         return IMPOSIBLE_BORRAR_ENTRADA;
     }
@@ -402,33 +412,41 @@ int mi_unlink(const char *camino){
         entrada_t bufferEntradas[nentradas_inodo_dir];
 
         resultado = mi_read_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
-        if(resultado < 0) return resultado;
+        if(resultado < 0){
+            mi_signalSem(SEM_DIRECTORIOS);
+            return resultado;
+        }
 
         bufferEntradas[nentrada] = bufferEntradas[nentradas_inodo_dir-1];
 
         resultado = mi_write_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
-        if(resultado < 0) return resultado;
+        if(resultado < 0){
+            mi_signalSem(SEM_DIRECTORIOS);
+            return resultado;
+        }
     }
 
     mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
 
     --inodo.nlinks;
-    if (inodo.nlinks == 0)  liberar_inodo(ninodo);
+    if (inodo.nlinks == 0) {
+        liberar_inodo(ninodo);
+    }
     else {
         inodo.mtime = time(NULL);
         inodo.ctime = time(NULL);
         escribir_inodo(inodo, ninodo);
     }
 
+    mi_signalSem(SEM_DIRECTORIOS);
+
     return 0;
 }
 
 int mi_chmod(const char *camino, unsigned char permisos){
-    struct superbloque sb;
-    bread(posSB,&sb);
     unsigned int ninodo;
 
-    int resultado = buscar_entrada(sb.posInodoRaiz,camino,&ninodo,0,0,NULL,NULL);
+    int resultado = buscar_entrada(0,camino,&ninodo,0,0,NULL,NULL);
     if(resultado < 0) return resultado;
 
     resultado = mi_chmod_f(ninodo,permisos);
@@ -438,11 +456,9 @@ int mi_chmod(const char *camino, unsigned char permisos){
 }
 
 int mi_stat(const char *camino, struct STAT *p_stat){
-    struct superbloque sb;
-    bread(posSB,&sb);
     unsigned int ninodo;
     
-    int resultado = buscar_entrada(sb.posInodoRaiz,camino,&ninodo,0,0,NULL,NULL);
+    int resultado = buscar_entrada(0,camino,&ninodo,0,0,NULL,NULL);
     if(resultado < 0) return resultado;
 
     resultado = mi_stat_f(ninodo,p_stat);
@@ -451,15 +467,13 @@ int mi_stat(const char *camino, struct STAT *p_stat){
     return 0;
 }
 int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nbytes){
-    struct superbloque sb;
-    bread(posSB,&sb);
     inodo_t inodo;
     unsigned int ninodo;
     int resultado;
 
     char hit = buscar_entrada_en_cache(camino, &ninodo, &cache_read);
     if(!hit){
-        resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, NULL, NULL);
+        resultado = buscar_entrada(0, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
         actualizar_cache(camino, ninodo, &cache_read);
     }
@@ -475,26 +489,28 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     return resultado;
 }
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes){
-    struct superbloque sb;
-    bread(posSB,&sb);
+    mi_waitSem(SEM_DIRECTORIOS);// todo los problemas vienen de poner este semaforo abajo
     unsigned int ninodo;
     inodo_t inodo;
     int resultado;
 
     char hit = buscar_entrada_en_cache(camino,&ninodo, &cache_write);
     if(!hit){
-        resultado = buscar_entrada(sb.posInodoRaiz, camino, &ninodo, 0, 0, NULL, NULL);
+        resultado = buscar_entrada(0, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
         actualizar_cache(camino, ninodo, &cache_write);
     }
 
+//    mi_waitSem(SEM_DIRECTORIOS);
     leer_inodo(ninodo,&inodo);
     if(inodo.tipo != TIPO_FICHERO){
         fprintf(stderr,"%s no es un fichero.\n",camino);
         return NO_ES_FICHERO;
     }
 
+
     resultado = mi_write_f(ninodo,buf,offset,nbytes);
+    mi_signalSem(SEM_DIRECTORIOS);
 
     return resultado;
 }
