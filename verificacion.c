@@ -6,11 +6,11 @@ void imprimirRegistro(struct registro reg){
     char bufferAux[50];
 
     sprintf(bufferAux,"pos: %lu, ",reg.posicion / sizeof(struct registro));
-    write(2,bufferAux,strlen(bufferAux));
+    write(1,bufferAux,strlen(bufferAux));
     sprintf(bufferAux,"nescritura: %u\n",reg.nEscritura);
-    write(2,bufferAux,strlen(bufferAux));
+    write(1,bufferAux,strlen(bufferAux));
     sprintf(bufferAux,"Time: %s",asctime(localtime(&reg.time)));
-    write(2,bufferAux,strlen(bufferAux));
+    write(1,bufferAux,strlen(bufferAux));
 }
 
 int main(int argc, char const *argv[]) {
@@ -97,31 +97,30 @@ int main(int argc, char const *argv[]) {
         }
 
 
-        unsigned int tamBuffer2 = 1000;
         char bufferAux[100], buffer[500];
         *buffer = '\0';
         *bufferAux = '\0';
 
         // Impresion por pantalla
         sprintf(bufferAux,"-----------Proceso %u------------ \n",pid);
-        write(2,bufferAux,strlen(bufferAux));
+        write(1,bufferAux,strlen(bufferAux));
 
-        write(2,"Primera escritura: ",strlen("Primera escritura: "));
+        write(1,"Primera escritura: ",strlen("Primera escritura: "));
         imprimirRegistro(primera_escritura);
 
-        write(2,"Ultima escritura: ",strlen("Ultima escritura: "));
+        write(1,"Ultima escritura: ",strlen("Ultima escritura: "));
         imprimirRegistro(ultima_escritura);
 
-        write(2,"Mayor Posicion: ",strlen("Mayor Posicion: "));
+        write(1,"Mayor Posicion: ",strlen("Mayor Posicion: "));
         imprimirRegistro(mayor_pos);
 
-        write(2,"Menor Posicion: ",strlen("Menor Posicion: "));
+        write(1,"Menor Posicion: ",strlen("Menor Posicion: "));
         imprimirRegistro(menor_pos);
 
         sprintf(bufferAux,"Numero de registros validos: %u\n", num_registros_validos);
-        write(2,bufferAux,strlen(bufferAux));
-        write(2,"--------------------------",strlen("--------------------------"));
-        write(2,"\n",strlen("\n"));
+        write(1,bufferAux,strlen(bufferAux));
+        write(1,"--------------------------",strlen("--------------------------"));
+        write(1,"\n",strlen("\n"));
 
         // Impresion en informe.txt
 

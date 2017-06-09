@@ -156,7 +156,7 @@ int reservar_bloque() {
 
     if (sb.cantBloquesLibres == 0) {
         fprintf(stderr, "No quedan bloques libres\n");
-        exit(NO_QUEDAN_BLOQUES_LIBRES);
+        return NO_QUEDAN_BLOQUES_LIBRES;
     }
 
     // Analizamos el bloque en busca de la posicion del primer bit a 0
@@ -304,7 +304,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
 
 /*
  *
- * CABECERAS DE FUNCIONES RECURSIVAS
+ * CABECERAS DE FUNCIONES RECURSIVAS Y AUXILIARES
  *
  */
 
@@ -317,7 +317,7 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
  * @param reservar Si es 1, en caso de que el bloque no este reservado, se reserva
  * @return Devuelve el numero de bloque fisico de datos a partir del puntero a la tabla indice y el numero de niveles
  */
-int indireccionar(unsigned int ptrBloqueIndice, int indirecciones_restantes, unsigned int nblogico_relativo, int denominador, inodo_t * inodo, char reservar);
+int indireccionar(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned  int nblogico, char reservar);
 /**
  * Libera los bloques apuntados mediante tablas indice y libera los bloques que contienen tablas indice en caso de ser necesario.
  * @param ptrBloqueIndice
@@ -327,7 +327,7 @@ int indireccionar(unsigned int ptrBloqueIndice, int indirecciones_restantes, uns
  * @param inodo
  * @return
  */
-int liberar_bloques_recursivo(unsigned int ptrBloqueIndice, int indirecciones_restantes, unsigned int nblogico_relativo, int denominador, inodo_t * inodo);
+int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned int nblogico);
 /**
  * Libera el bloque logico $nblogico del inodo $inodo.
  * Si no esta inicializado, omite la liberación pero no devuelve ningún error.
@@ -337,251 +337,230 @@ int liberar_bloques_recursivo(unsigned int ptrBloqueIndice, int indirecciones_re
  */
 int liberar_bloque_inodo(inodo_t * inodo, unsigned int nblogico);
 
+int obtener_nrangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int *ptr);
+
+int asignar_ptr_inicial(inodo_t * inodo, unsigned int nblogico, unsigned int ptrInicial);
+
+int obtener_indice(unsigned int nblogico, int nivel_punteros);
+
 /*
  *
- * IMPLEMENTACIONES DE FUNCIONES RECURSIVAS
+ * IMPLEMENTACIONES DE FUNCIONES RECURSIVAS Y AUXILIARES
  *
  */
 
-int indireccionar(unsigned int ptrBloqueIndice, int indirecciones_restantes, unsigned int nblogico_relativo, int denominador, inodo_t * inodo, char reservar){
+int obtener_nrangoBL (inodo_t * inodo, unsigned int nblogico, unsigned int *ptr){
 
-    unsigned int bufferBloqueIndice[NPUNTEROS], indice = nblogico_relativo/denominador;
-
-    bread(ptrBloqueIndice,&bufferBloqueIndice);
-
-    if(bufferBloqueIndice[indice] == 0){
-        if(reservar){
-            bufferBloqueIndice[indice] = reservar_bloque();
-            ++inodo->numBloquesOcupados;
-            inodo->ctime = time(NULL);
-            bwrite(ptrBloqueIndice,&bufferBloqueIndice);
-        } else {
-            return BLOQUE_LOGICO_NO_INICIALIZADO;
-        }
-    }
-
-    if(indirecciones_restantes > 1){
-
-        return indireccionar(
-                bufferBloqueIndice[indice],
-                indirecciones_restantes - 1,
-                nblogico_relativo % denominador,
-                denominador / NPUNTEROS,
-                inodo,
-                reservar);
-
-    } else {
-        return bufferBloqueIndice[indice]; // Ultima indireccion
+    if (nblogico < DIRECTOS){
+        *ptr = inodo->punterosDirectos[nblogico];
+        return 0;
+    }else if(nblogico < INDIRECTOS0){
+        *ptr = inodo->punterosIndirectos[0];
+        return 1;
+    }else if(nblogico < INDIRECTOS1){
+        *ptr = inodo->punterosIndirectos[1];
+        return 2;
+    }else if(nblogico < INDIRECTOS2){
+        *ptr = inodo->punterosIndirectos[2];
+        return 3;
+    }else{
+        *ptr = 0;
+        fprintf(stderr, "Bloque logico '%u' fuera de rango\n",nblogico);
+        exit(BLOQUE_LOGICO_FUERA_DE_RANGO);
     }
 }
 
-int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reservar){
-    inodo_t inodo;
-    unsigned int nblogico_relativo, ptrInicial, denominador;
-    int nivel;
+int asignar_ptr_inicial(inodo_t * inodo, unsigned int nblogico, unsigned int ptrInicial){
+    if (nblogico < DIRECTOS){
+        inodo->punterosDirectos[nblogico] = ptrInicial;
+        return 0;
+    }else if(nblogico < INDIRECTOS0){
+        inodo->punterosIndirectos[0] = ptrInicial;
+        return 1;
+    }else if(nblogico < INDIRECTOS1){
+        inodo->punterosIndirectos[1] = ptrInicial;
+        return 2;
+    }else if(nblogico < INDIRECTOS2){
+        inodo->punterosIndirectos[2] = ptrInicial;
+        return 3;
+    }else{
+        fprintf(stderr, "Bloque logico '%u' fuera de rango\n",nblogico);
+        exit(BLOQUE_LOGICO_FUERA_DE_RANGO);
+    }
+}
 
-    leer_inodo(ninodo, &inodo);
+int obtener_indice(unsigned int nblogico, int nivel_punteros){
+    if (nblogico < DIRECTOS) return nblogico;
+    else if (nblogico < INDIRECTOS0) return (nblogico-DIRECTOS);
+    else if (nblogico < INDIRECTOS1){
 
-    if(nblogico < DIRECTOS){
+        if (nivel_punteros == 2) {
+            return (nblogico - INDIRECTOS0) / NPUNTEROS;
+        }else{
+            return (nblogico - INDIRECTOS0) % NPUNTEROS;
+        }
 
-        // Reservar si procede
-        if(inodo.punterosDirectos[nblogico] == 0){
+    }
+    else{
+
+        if (nivel_punteros == 3) {
+            return (nblogico - INDIRECTOS1) / (NPUNTEROS*NPUNTEROS);
+        }else if (nivel_punteros == 2){
+            return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) / NPUNTEROS;
+        }else{
+            return ((nblogico - INDIRECTOS1) % (NPUNTEROS*NPUNTEROS)) % NPUNTEROS;
+        }
+
+    }
+}
+
+int indireccionar(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned  int nblogico, char reservar){
+
+    if(indirecciones_restantes > 0){
+
+        if(*ptrBloqueIndice == 0){
             if(reservar){
-                inodo.punterosDirectos[nblogico] = reservar_bloque();
-                //fprintf(stderr,"Bloque fisico %u asignado a bloque logico %u\n",inodo.punterosDirectos[nblogico],nblogico);
-                ++inodo.numBloquesOcupados;
-                inodo.ctime = time(NULL);
-
-                escribir_inodo(inodo, ninodo);
-
+                *ptrBloqueIndice = reservar_bloque();
+                if(*ptrBloqueIndice == NO_QUEDAN_BLOQUES_LIBRES){
+                    return NO_QUEDAN_BLOQUES_LIBRES;
+                }
+                ++inodo->numBloquesOcupados;
+                inodo->ctime = time(NULL);
             } else {
                 return BLOQUE_LOGICO_NO_INICIALIZADO;
             }
         }
 
-        return inodo.punterosDirectos[nblogico]; // No hace falta indireccionar
+        unsigned int
+                bufferBloqueIndice[NPUNTEROS],
+                indice = obtener_indice(nblogico, indirecciones_restantes);
 
-    } else if(nblogico < DIRECTOS + NPUNTEROS){
+        bread(*ptrBloqueIndice,bufferBloqueIndice);
 
-        // Reservar si procede
-        if(inodo.punterosIndirectos[0] == 0){
-            if(reservar){
-                inodo.punterosIndirectos[0] = reservar_bloque();
-                ++inodo.numBloquesOcupados;
-                inodo.ctime = time(NULL);
-                escribir_inodo(inodo, ninodo);
+        char entrada_actualizada = reservar && bufferBloqueIndice[indice] == 0;
 
-            } else {
-                return (BLOQUE_LOGICO_NO_INICIALIZADO);
+        int nBloqueFisico = indireccionar(
+                &bufferBloqueIndice[indice],
+                indirecciones_restantes - 1,
+                inodo,
+                nblogico,
+                reservar);
 
-            }
+//        if(nBloqueFisico < 0){
+//            printf("Ha habido un error indireccionando la tabla %u\n", bufferBloqueIndice[indice]);
+//            return nBloqueFisico;
+//        }
+
+        if(entrada_actualizada){
+            bwrite(*ptrBloqueIndice,bufferBloqueIndice);
         }
 
-        nblogico_relativo = nblogico - DIRECTOS;
-        ptrInicial = inodo.punterosIndirectos[0];
-        nivel = 1;
-        denominador = 1;
-
-    } else if(nblogico < DIRECTOS + NPUNTEROS + NPUNTEROS_CUADRADO){
-
-        // Reservar si procede
-        if(inodo.punterosIndirectos[1] == 0){
-            if(reservar){
-                inodo.punterosIndirectos[1] = reservar_bloque();
-                ++inodo.numBloquesOcupados;
-                inodo.ctime = time(NULL);
-                escribir_inodo(inodo, ninodo);
-            } else {
-                return (BLOQUE_LOGICO_NO_INICIALIZADO);
-            }
-        }
-
-        nblogico_relativo = nblogico - DIRECTOS - NPUNTEROS;
-        ptrInicial = inodo.punterosIndirectos[1];
-        nivel = 2;
-        denominador = NPUNTEROS;
-
-    } else if(nblogico < DIRECTOS + NPUNTEROS + NPUNTEROS_CUADRADO + NPUNTEROS_CUBO){
-
-        // Reservar si procede
-        if(inodo.punterosIndirectos[2] == 0){
-            if(reservar){
-                inodo.punterosIndirectos[2] = reservar_bloque();
-                ++inodo.numBloquesOcupados;
-                inodo.ctime = time(NULL);
-                escribir_inodo(inodo, ninodo);
-            } else {
-                return (BLOQUE_LOGICO_NO_INICIALIZADO);
-            }
-        }
-
-        nblogico_relativo = nblogico - DIRECTOS - NPUNTEROS - NPUNTEROS_CUADRADO;
-        ptrInicial = inodo.punterosIndirectos[2];
-        nivel = 3;
-        denominador = NPUNTEROS_CUADRADO;
+        return nBloqueFisico;
 
     } else {
-        fprintf(stderr,"El bloque logico %u esta fuera del rango.\n",nblogico);
-        exit(BLOQUE_LOGICO_FUERA_DE_RANGO);
-    }
 
-    unsigned int nbloqueFisico = indireccionar(ptrInicial, nivel, nblogico_relativo, denominador, &inodo, reservar);
+        if(*ptrBloqueIndice == 0){
+            if(reservar){
+                *ptrBloqueIndice = reservar_bloque();
+                if(*ptrBloqueIndice == NO_QUEDAN_BLOQUES_LIBRES){
+                    return NO_QUEDAN_BLOQUES_LIBRES;
+                }
+                ++inodo->numBloquesOcupados;
+                inodo->ctime = time(NULL);
+            } else {
+                return BLOQUE_LOGICO_NO_INICIALIZADO;
+            }
+        }
+
+        //printf("Devolviendo bloque\n");
+        return *ptrBloqueIndice;
+    }
+}
+
+int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reservar){
+    inodo_t inodo;
+    unsigned int ptrInicial;
+    int nbloqueFisico, nivel;
+
+    leer_inodo(ninodo, &inodo);
+
+    nivel = obtener_nrangoBL(&inodo,nblogico,&ptrInicial);
+    nbloqueFisico = indireccionar(&ptrInicial, nivel, &inodo, nblogico, reservar);
+    asignar_ptr_inicial(&inodo,nblogico,ptrInicial);
+
+    if(nbloqueFisico == NO_QUEDAN_BLOQUES_LIBRES){
+        fprintf(stderr,"No quedan bloques libres");
+        return NO_QUEDAN_BLOQUES_LIBRES;
+    }
 
     escribir_inodo(inodo,ninodo);
 
     return nbloqueFisico;
 }
 
-int liberar_bloques_recursivo(unsigned int ptrBloqueIndice, int indirecciones_restantes, unsigned int nblogico_relativo, int denominador, inodo_t * inodo){
+int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned int nblogico){
 
-    unsigned int bufferBloqueIndice[NPUNTEROS],
-            bufferBloqueIndiceApuntado[NPUNTEROS],
-            bufferAux[NPUNTEROS],
-            indice = nblogico_relativo/denominador,
-            liberar = 0;
+    //printf("Nivel %u\n",indirecciones_restantes);
 
-    bread(ptrBloqueIndice,&bufferBloqueIndice);
+    if(indirecciones_restantes > 0){
 
-    // Comprobamos si la entrada apunta a algun bloque
-    if(bufferBloqueIndice[indice] == 0){
-        return 0;
-    }
+        unsigned int
+                bufferBloqueIndice[NPUNTEROS],
+                indice = obtener_indice(nblogico, indirecciones_restantes);
 
-    if(indirecciones_restantes > 1){
+        // Comprobamos si la entrada apunta a algun bloque
+        //printf("Se recibe el bloque indice %u\n",*ptrBloqueIndice);
+        if(*ptrBloqueIndice == 0){
+            return 0;
+        }
+
+        bread(*ptrBloqueIndice,bufferBloqueIndice);
 
         liberar_bloques_recursivo(
-                bufferBloqueIndice[indice],
+                &bufferBloqueIndice[indice],
                 indirecciones_restantes - 1,
-                nblogico_relativo % denominador,
-                denominador / NPUNTEROS,
-                inodo);
+                inodo,
+                nblogico);
 
-        // En este punto tenemos la tabla indice que apunta a otra tabla indice
-        bread(bufferBloqueIndice[indice], &bufferBloqueIndiceApuntado);
-        memset(bufferAux,0,NPUNTEROS * sizeof(unsigned int));
+        bwrite(*ptrBloqueIndice,bufferBloqueIndice);
 
-        // Se comprueba si la tabla indice contiene algun puntero aun
-        liberar = (memcmp(bufferBloqueIndiceApuntado,bufferAux,(NPUNTEROS * sizeof(unsigned int)))) ? 0 : 1;
+        // Comprobamos si el bloque indice contiene algun otro bloque asignado
+        unsigned int bufferCeros[NPUNTEROS];
+        memset(bufferCeros,0,NPUNTEROS * sizeof(unsigned int));
+
+        if(!memcmp(bufferCeros, bufferBloqueIndice, NPUNTEROS * sizeof(unsigned int))){
+            // Liberamos el bloque indice
+            //printf("Se libera la tabla indice %u\n",*ptrBloqueIndice);
+            liberar_bloque(*ptrBloqueIndice);
+            *ptrBloqueIndice = 0;
+
+            --inodo->numBloquesOcupados;
+            inodo->ctime = time(NULL);
+        }
 
     } else {
-        // En este punto tenemos la tabla indice que apunta al bloque de datos
-        liberar = 1;
-    }
 
-    if(liberar){
-        bufferBloqueIndice[indice] = 0;
-        bwrite(ptrBloqueIndice, bufferBloqueIndice);
+        if(*ptrBloqueIndice != 0) {
+            //printf("Se libera el bloque de datos %u\n", *ptrBloqueIndice);
+            liberar_bloque(*ptrBloqueIndice);
+            *ptrBloqueIndice = 0;
 
-        --inodo->numBloquesOcupados;
-        inodo->ctime = time(NULL);
-
-        liberar_bloque(bufferBloqueIndice[indice]);
+            --inodo->numBloquesOcupados;
+            inodo->ctime = time(NULL);
+        }
     }
 
     return 0;
 }
 
 int liberar_bloque_inodo(inodo_t *inodo, unsigned int nblogico) {
-    unsigned int nblogico_relativo, ptrInicial, denominador;
-    int nivel;
+    unsigned int ptrInicial, nivel;
 
-    if (nblogico < DIRECTOS) {
+    nivel = obtener_nrangoBL(inodo, nblogico, &ptrInicial);
 
-        if(inodo->punterosDirectos[nblogico] == 0){
-            return 0;
-        }
+    liberar_bloques_recursivo(&ptrInicial,nivel,inodo,nblogico);
 
-        liberar_bloque(inodo->punterosDirectos[nblogico]);
-        inodo->punterosDirectos[nblogico] = 0;
-        --inodo->numBloquesOcupados;
-        inodo->ctime = time(NULL);
-
-        return 0;
-
-    } else if (nblogico < DIRECTOS + NPUNTEROS) {
-
-        nblogico_relativo = nblogico - DIRECTOS;
-        ptrInicial = inodo->punterosIndirectos[0];
-        nivel = 1;
-        denominador = 1;
-
-    } else if (nblogico < DIRECTOS + NPUNTEROS + NPUNTEROS_CUADRADO) {
-
-        nblogico_relativo = nblogico - DIRECTOS - NPUNTEROS;
-        ptrInicial = inodo->punterosIndirectos[1];
-        nivel = 2;
-        denominador = NPUNTEROS;
-
-    } else if (nblogico < DIRECTOS + NPUNTEROS + NPUNTEROS_CUADRADO + NPUNTEROS_CUBO) {
-
-        nblogico_relativo = nblogico - DIRECTOS - NPUNTEROS - NPUNTEROS_CUADRADO;
-        ptrInicial = inodo->punterosIndirectos[2];
-        nivel = 3;
-        denominador = NPUNTEROS_CUADRADO;
-
-    } else {
-        fprintf(stderr, "El bloque logico %u esta fuera del rango.\n", nblogico);
-        exit(BLOQUE_LOGICO_FUERA_DE_RANGO);
-    }
-
-    // Comprobamos que el puntero apunte a algun bloque
-    if(ptrInicial == 0){
-        return 0;
-    }
-
-    liberar_bloques_recursivo(ptrInicial, nivel, nblogico_relativo, denominador, inodo);
-
-    // Comprobamos si hay que liberar el bloque que contiene la tabla indice
-    unsigned int bufferBloqueIndiceApuntado[NPUNTEROS], bufferAux[NPUNTEROS];
-    bread(inodo->punterosIndirectos[nivel - 1], &bufferBloqueIndiceApuntado);
-    memset(bufferAux, 0, NPUNTEROS * sizeof(unsigned int));
-
-    if (memcmp(&bufferBloqueIndiceApuntado, &bufferAux, (NPUNTEROS * sizeof(unsigned int))) == 0) {
-        liberar_bloque(inodo->punterosIndirectos[nivel - 1]);
-        inodo->punterosIndirectos[nivel - 1] = 0;
-        --inodo->numBloquesOcupados;
-        inodo->ctime = time(NULL);
-    }
+    asignar_ptr_inicial(inodo, nblogico, ptrInicial);
 
     return 0;
 }

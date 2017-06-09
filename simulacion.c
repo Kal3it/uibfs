@@ -4,8 +4,8 @@
 
 #define NPROCESOS  100
 #define POS_MAX 500000
-#define SLEEP_PROCESS 0
-#define SLEEP_WRITE 0
+#define SLEEP_PROCESS 200000
+#define SLEEP_WRITE 50000
 
 int acabados = 0;
 
