@@ -396,21 +396,30 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros){
 
         if (nivel_punteros == 2) {
             return (nblogico - INDIRECTOS0) / NPUNTEROS;
-        }else{
+        } else if (nivel_punteros == 1){
             return (nblogico - INDIRECTOS0) % NPUNTEROS;
+        } else {
+            fprintf(stderr,"Erroraco amigo");
+            exit(-1);
         }
 
     }
-    else{
+    else if (nblogico < INDIRECTOS2){
 
         if (nivel_punteros == 3) {
             return (nblogico - INDIRECTOS1) / (NPUNTEROS*NPUNTEROS);
-        }else if (nivel_punteros == 2){
+        } else if (nivel_punteros == 2){
             return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) / NPUNTEROS;
-        }else{
-            return ((nblogico - INDIRECTOS1) % (NPUNTEROS*NPUNTEROS)) % NPUNTEROS;
+        } else if (nivel_punteros == 1){
+            return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) % NPUNTEROS;
+        } else {
+            fprintf(stderr,"Erroraco amigo");
+            exit(-1);
         }
 
+    } else {
+        fprintf(stderr,"Erroraco amigo");
+        exit(-1);
     }
 }
 
@@ -489,7 +498,7 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
     asignar_ptr_inicial(&inodo,nblogico,ptrInicial);
 
     if(nbloqueFisico == NO_QUEDAN_BLOQUES_LIBRES){
-        fprintf(stderr,"No quedan bloques libres");
+        fprintf(stderr,"No quedan bloques libres\n");
         return NO_QUEDAN_BLOQUES_LIBRES;
     }
 

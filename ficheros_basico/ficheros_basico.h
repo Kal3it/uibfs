@@ -5,9 +5,8 @@
 #define posSB 0 //el superbloque se escribe en el primer bloque de nuestro FS
 #define T_INODO 128 //tamaño en bytes de un inodo (debe ser igual a sizeof(inodo_t))
 
-#define DIRECTOS 12
 #define NPUNTEROS           (int) (BLOCKSIZE/sizeof(unsigned int))
-
+#define DIRECTOS 12
 #define INDIRECTOS0 (NPUNTEROS + DIRECTOS)  //268
 #define INDIRECTOS1 (NPUNTEROS * NPUNTEROS + INDIRECTOS0)   //65.804
 #define INDIRECTOS2 (NPUNTEROS * NPUNTEROS * NPUNTEROS + INDIRECTOS1)
