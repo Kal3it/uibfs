@@ -7,7 +7,7 @@ int main(int argc, char const *argv[]){
     }
 
 
-    char camino[strlen(argv[3])+1];
+    char camino[strlen(argv[3])+2];
     strcpy(camino,argv[3]);
     char permisos = atoi(argv[2]);
     int resultado;

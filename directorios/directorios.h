@@ -48,7 +48,7 @@ struct registro
  */
 int mi_creat(const char *camino, unsigned char permisos);
 int mi_dir(const char *camino, char *buffer);
-int mi_dir_simple(const char *camino, void *buffer_entradas);
+int mi_dir_simple(const char *camino, char *buffer_entradas);
 int mi_link(const char *camino1, const char *camino2);
 int mi_unlink(const char *camino);
 int mi_chmod(const char *camino, unsigned char permisos);

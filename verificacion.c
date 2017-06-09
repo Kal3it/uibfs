@@ -3,9 +3,14 @@
 #define NUM_ENTRADAS_PROCESOS 100
 
 void imprimirRegistro(struct registro reg){
-    fprintf(stderr,"pos: %lu, ",reg.posicion / sizeof(struct registro));
-    fprintf(stderr,"nescritura: %u\n",reg.nEscritura);
-    fprintf(stderr,"Time: %s",asctime(localtime(&reg.time)));
+    char bufferAux[50];
+
+    sprintf(bufferAux,"pos: %lu, ",reg.posicion / sizeof(struct registro));
+    write(2,bufferAux,strlen(bufferAux));
+    sprintf(bufferAux,"nescritura: %u\n",reg.nEscritura);
+    write(2,bufferAux,strlen(bufferAux));
+    sprintf(bufferAux,"Time: %s",asctime(localtime(&reg.time)));
+    write(2,bufferAux,strlen(bufferAux));
 }
 
 int main(int argc, char const *argv[]) {
@@ -16,14 +21,15 @@ int main(int argc, char const *argv[]) {
 
     bmount(argv[1]);
 
-    const char *camino = argv[2];
+    char camino[strlen(argv[2])+2];
+    strcpy(camino,argv[2]);
+    if(camino[strlen(camino)-1] != '/') strcat(camino,"/");
 
     entrada_t buffer_entradas[NUM_ENTRADAS_PROCESOS];
-    int n_entradas_leidas = mi_dir_simple(camino,&buffer_entradas);
+    int n_entradas_leidas = mi_dir_simple(camino,(char *)&buffer_entradas); // todo: reconocer directorio con / y sin /
     if (n_entradas_leidas < 0)
     {
-        fprintf(stderr,"Error leyendo entradas del directorio\n");
-        exit(-1);
+        return -1;
     }
     if (n_entradas_leidas != NUM_ENTRADAS_PROCESOS){
         fprintf(stderr,"El directorio debe tener %u entradas exactamente, tiene %u\n", NUM_ENTRADAS_PROCESOS, n_entradas_leidas);
@@ -32,8 +38,11 @@ int main(int argc, char const *argv[]) {
 
     char archivo_informe[strlen(camino)+20];
     unsigned int offsetInforme = 0;
-    sprintf(archivo_informe, "%s/informe.txt", camino);
-    if (mi_creat(archivo_informe, 6) < 0) fprintf(stderr,"Error al crear el fichero\n");
+    sprintf(archivo_informe, "%sinforme.txt", camino);
+    if (mi_creat(archivo_informe, 6) < 0){
+        fprintf(stderr,"Error al crear el fichero\n");
+        exit(-1);
+    }
 
     for (int n_fichero_proceso = 0; n_fichero_proceso < NUM_ENTRADAS_PROCESOS; ++n_fichero_proceso) {
         char fichero_registros[strlen(camino)+strlen(buffer_entradas[n_fichero_proceso].nombre)+10];
@@ -41,7 +50,7 @@ int main(int argc, char const *argv[]) {
         char *ptr_pid = strchr(buffer_entradas[n_fichero_proceso].nombre,'_'); //extraemos el pid del nombre de la entrada
         pid_t pid = atoi(ptr_pid+1);
 
-        sprintf(fichero_registros, "%s/%s/prueba.dat", camino, buffer_entradas[n_fichero_proceso].nombre);
+        sprintf(fichero_registros, "%s%s/prueba.dat", camino, buffer_entradas[n_fichero_proceso].nombre);
 
         struct registro primera_escritura, ultima_escritura, mayor_pos, menor_pos;
 
@@ -87,25 +96,34 @@ int main(int argc, char const *argv[]) {
             respuesta = mi_read(fichero_registros, buffer_registros, offset, tamBuffer);
         }
 
-        // Impresion por pantalla
-        fprintf(stderr,"-----------Proceso %u------------ \n",pid);
-        fprintf(stderr,"Primera escritura: ");
-        imprimirRegistro(primera_escritura);
-        fprintf(stderr,"Ultima escritura: ");
-        imprimirRegistro(ultima_escritura);
-        fprintf(stderr,"Mayor Posicion: ");
-        imprimirRegistro(mayor_pos);
-        fprintf(stderr,"Menor Posicion: ");
-        imprimirRegistro(menor_pos);
-        fprintf(stderr,"Numero de registros validos: %u\n", num_registros_validos);
-        fprintf(stderr,"--------------------------");
-        fprintf(stderr,"\n");
 
-        // Impresion en informe.txt
         unsigned int tamBuffer2 = 1000;
-        char bufferAux[tamBuffer2], buffer[tamBuffer2];
+        char bufferAux[100], buffer[500];
         *buffer = '\0';
         *bufferAux = '\0';
+
+        // Impresion por pantalla
+        sprintf(bufferAux,"-----------Proceso %u------------ \n",pid);
+        write(2,bufferAux,strlen(bufferAux));
+
+        write(2,"Primera escritura: ",strlen("Primera escritura: "));
+        imprimirRegistro(primera_escritura);
+
+        write(2,"Ultima escritura: ",strlen("Ultima escritura: "));
+        imprimirRegistro(ultima_escritura);
+
+        write(2,"Mayor Posicion: ",strlen("Mayor Posicion: "));
+        imprimirRegistro(mayor_pos);
+
+        write(2,"Menor Posicion: ",strlen("Menor Posicion: "));
+        imprimirRegistro(menor_pos);
+
+        sprintf(bufferAux,"Numero de registros validos: %u\n", num_registros_validos);
+        write(2,bufferAux,strlen(bufferAux));
+        write(2,"--------------------------",strlen("--------------------------"));
+        write(2,"\n",strlen("\n"));
+
+        // Impresion en informe.txt
 
         sprintf(bufferAux, "-----------Proceso %u------------ \n", pid);
         strcat(buffer,bufferAux);

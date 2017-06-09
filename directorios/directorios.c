@@ -13,7 +13,7 @@ char extraer_camino(const char *camino, char *inicial, const char **final) {
     unsigned int lenCamino = strlen(camino+1), lenFinal;
 
     if(lenCamino < 1 || lenCamino > MAX_TAM_NOMBRE_ENTRADA){
-        fprintf(stderr,"Pathname invalido.\n");
+        fprintf(stderr,"Pathname '%s' invalido.\n",camino);
         return PATHNAME_INVALIDO;
     }
 
@@ -34,7 +34,7 @@ char extraer_camino(const char *camino, char *inicial, const char **final) {
     inicial[lenCamino-lenFinal] = '\0';
 
     if(strlen(inicial) == 0){
-        fprintf(stderr,"Pathname invalido.\n");
+        fprintf(stderr,"Pathname '%s' invalido.\n",camino);
         return PATHNAME_INVALIDO;
     }
 
@@ -181,7 +181,7 @@ int buscar_entrada(unsigned int ninodo_root,
             return PERMISOS_INSUFICIENTES;
         }
         if(inodo_root.tipo != TIPO_DIRECTORIO){
-            fprintf(stderr,"No es un directorio!\n");
+            fprintf(stderr,"%s no es un directorio!\n",pathname);
             return NO_ES_DIRECTORIO;
         }
 
@@ -301,13 +301,19 @@ int mi_dir(const char *camino, char *buffer){
     return 0;
 }
 
-int mi_dir_simple(const char *camino, void *buffer_entradas){
+int mi_dir_simple(const char *camino, char *buffer_entradas){
     unsigned int ninodo;
     inodo_t inodo;
 
     int resultado = buscar_entrada(0,camino,&ninodo,0,0, NULL, NULL);
     if(resultado < 0) return resultado;
     leer_inodo(ninodo,&inodo);
+
+    // Comprobamos errores
+    if((inodo.permisos & 2) != 2) /* r */{
+        fprintf(stderr,"El fichero '%s' no tiene permisos de lectura.\n",camino);
+        return PERMISOS_INSUFICIENTES;
+    }
 
     if(inodo.tipo != TIPO_DIRECTORIO){
         fprintf(stderr,"%s no es un directorio!\n",camino);
