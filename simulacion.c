@@ -103,20 +103,17 @@ int main (int argc, char *argv[]) {
     char dir_simulacion[80];
     sprintf(dir_simulacion,"/%s/",str_time);
     mi_creat(dir_simulacion,7);
-    bumount();
 
-    //usleep(10);
     // Lanzamos los procesos
     for (int i = 0; i < NPROCESOS; ++i) {
         forker(argv[1], i, dir_simulacion);
     }
 
-//    wait(NULL);
     while (acabados < NPROCESOS){
         pause();
     }
 
-//    bumount();
+    bumount();
 
     printf("%s\n",dir_simulacion);
 

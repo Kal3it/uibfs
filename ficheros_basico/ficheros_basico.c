@@ -308,33 +308,10 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
  *
  */
 
-/**
- * @param ptrBloqueIndice Numero de bloque fisico que contiene la tabla indice
- * @param indirecciones_restantes Niveles restantes hasta llegar a la tabla indice
- * @param nblogico_relativo Numero de bloque logico dentro de la tabla indice que contiene el numero del siguiente bloque
- * @param denominador
- * @param inodo Puntero a la variable inodo que se irá actualizando durante las llamadas
- * @param reservar Si es 1, en caso de que el bloque no este reservado, se reserva
- * @return Devuelve el numero de bloque fisico de datos a partir del puntero a la tabla indice y el numero de niveles
- */
 int indireccionar(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned  int nblogico, char reservar);
-/**
- * Libera los bloques apuntados mediante tablas indice y libera los bloques que contienen tablas indice en caso de ser necesario.
- * @param ptrBloqueIndice
- * @param indirecciones_restantes
- * @param nblogico_relativo
- * @param denominador
- * @param inodo
- * @return
- */
+
 int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned int nblogico);
-/**
- * Libera el bloque logico $nblogico del inodo $inodo.
- * Si no esta inicializado, omite la liberación pero no devuelve ningún error.
- * @param inodo
- * @param nblogico
- * @return
- */
+
 int liberar_bloque_inodo(inodo_t * inodo, unsigned int nblogico);
 
 int obtener_nrangoBL(inodo_t *inodo, unsigned int nblogico, unsigned int *ptr);
@@ -455,10 +432,9 @@ int indireccionar(unsigned int *ptrBloqueIndice, int indirecciones_restantes, in
                 nblogico,
                 reservar);
 
-//        if(nBloqueFisico < 0){
-//            printf("Ha habido un error indireccionando la tabla %u\n", bufferBloqueIndice[indice]);
-//            return nBloqueFisico;
-//        }
+        if(nBloqueFisico < 0){ // NO_QUEDAN_BLOQUES_LIBRES o BLOQUE_LOGICO_NO_INICIALIZADO
+            return nBloqueFisico;
+        }
 
         if(entrada_actualizada){
             bwrite(*ptrBloqueIndice,bufferBloqueIndice);
@@ -481,7 +457,6 @@ int indireccionar(unsigned int *ptrBloqueIndice, int indirecciones_restantes, in
             }
         }
 
-        //printf("Devolviendo bloque\n");
         return *ptrBloqueIndice;
     }
 }
@@ -494,8 +469,10 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
     leer_inodo(ninodo, &inodo);
 
     nivel = obtener_nrangoBL(&inodo,nblogico,&ptrInicial);
-    nbloqueFisico = indireccionar(&ptrInicial, nivel, &inodo, nblogico, reservar);
-    asignar_ptr_inicial(&inodo,nblogico,ptrInicial);
+    
+	nbloqueFisico = indireccionar(&ptrInicial, nivel, &inodo, nblogico, reservar);
+    
+	asignar_ptr_inicial(&inodo,nblogico,ptrInicial);
 
     if(nbloqueFisico == NO_QUEDAN_BLOQUES_LIBRES){
         fprintf(stderr,"No quedan bloques libres\n");
@@ -509,8 +486,6 @@ int traducir_bloque_inodo(unsigned int ninodo, unsigned int nblogico, char reser
 
 int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned int nblogico){
 
-    //printf("Nivel %u\n",indirecciones_restantes);
-
     if(indirecciones_restantes > 0){
 
         unsigned int
@@ -518,7 +493,6 @@ int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_r
                 indice = obtener_indice(nblogico, indirecciones_restantes);
 
         // Comprobamos si la entrada apunta a algun bloque
-        //printf("Se recibe el bloque indice %u\n",*ptrBloqueIndice);
         if(*ptrBloqueIndice == 0){
             return 0;
         }
@@ -533,13 +507,12 @@ int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_r
 
         bwrite(*ptrBloqueIndice,bufferBloqueIndice);
 
-        // Comprobamos si el bloque indice contiene algun otro bloque asignado
+        // Comprobamos si el bloque indice no contiene mas bloques asignados
+		// Si es el caso, se libera
         unsigned int bufferCeros[NPUNTEROS];
         memset(bufferCeros,0,NPUNTEROS * sizeof(unsigned int));
 
         if(!memcmp(bufferCeros, bufferBloqueIndice, NPUNTEROS * sizeof(unsigned int))){
-            // Liberamos el bloque indice
-            //printf("Se libera la tabla indice %u\n",*ptrBloqueIndice);
             liberar_bloque(*ptrBloqueIndice);
             *ptrBloqueIndice = 0;
 
@@ -550,7 +523,6 @@ int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_r
     } else {
 
         if(*ptrBloqueIndice != 0) {
-            //printf("Se libera el bloque de datos %u\n", *ptrBloqueIndice);
             liberar_bloque(*ptrBloqueIndice);
             *ptrBloqueIndice = 0;
 

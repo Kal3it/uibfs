@@ -38,8 +38,6 @@ char extraer_camino(const char *camino, char *inicial, const char **final) {
         return PATHNAME_INVALIDO;
     }
 
-    //printf("inicial: %s, final: %s, lenCamino: %d, lenFinal: %d, size inicial: %d, size final: %d\n",inicial, *final, lenFinal, strlen(inicial),strlen(*final));
-
     return tipo;
 }
 
@@ -76,8 +74,6 @@ char buscar_entrada_en_cache(const char *camino, unsigned int *ninodo, cache_t *
         if(cache->entradas[cache->entrada_mas_antigua].ultimo_hit > cache->entradas[indice_entrada].ultimo_hit){
             cache->entrada_mas_antigua = indice_entrada;
         }
-
-        //fprintf(stderr,"Entrada encontrada en el indice %d. Entrada: %s, Ninodo: %d\n",indice_entrada,cache->entradas[indice_entrada].nombre,cache->entradas[indice_entrada].ninodo);
     }
 
     if(hit){
@@ -101,8 +97,6 @@ char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsig
     int respuesta = 0;
     char existeEntrada = 0;
 
-    //fprintf(stderr,"Buscando en el directorio con numero de inodo %u la entrada %s\n",ninodo_dir,str_entrada);
-
     respuesta = mi_read_f(ninodo_dir, entradas, offset, tamBuffer);
     *ultima_entrada_leida = -1;
     while (respuesta > 0){
@@ -111,7 +105,6 @@ char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsig
         for(numEntrada = 0; numEntrada < entradas_leidas && !existeEntrada; ++numEntrada) {
             existeEntrada = !strcmp(entradas[numEntrada].nombre, str_entrada);
             ++(*ultima_entrada_leida);
-            //fprintf(stderr,"Se lee la entrada %s (inodo %u) y se compara con la nuestra %s\n",entradas[numEntrada].nombre,entradas[numEntrada].ninodo, str_entrada);
         }
         if(existeEntrada) break;
 
@@ -119,7 +112,6 @@ char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsig
         respuesta = mi_read_f(ninodo_dir, entradas, offset, tamBuffer);
     }
 
-    //fprintf(stderr,"Ultima entrada leida: %u\n",*ultima_entrada_leida);
     if(existeEntrada) *ninodo = entradas[numEntrada-1].ninodo;
 
     return existeEntrada;
@@ -137,8 +129,6 @@ void crear_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, char t
     *nuevo_ninodo = nueva_entrada.ninodo;
 
     mi_write_f(ninodo_dir,&nueva_entrada,offset,sizeof(entrada_t));
-
-    //fprintf(stderr,"Creado el ninodo %u con nombre '%s'.\n",nueva_entrada.ninodo,nueva_entrada.nombre);
 }
 
 /**
@@ -204,11 +194,9 @@ int buscar_entrada(unsigned int ninodo_root,
             return YA_EXISTE_ENTRADA;
         }
 
-        //fprintf(stderr,"esUltimoDir %u, pninodo_dir %u, pnentrada %u\n",esUltimoDir, pninodo_dir != NULL ,pnentrada != NULL);
         if(esUltimoDir && (pninodo_dir != NULL )&& (pnentrada != NULL)){
             *pninodo_dir = ninodo_root;
             *pnentrada = existeEntrada ? ultimaEntradaLeida : numEntradas;
-            //fprintf(stderr,"El ultimo directorio es %u y su entrada es %u\n",ninodo_root,*pnentrada);
         }
 
         ninodo_root = next_ninodo;
@@ -222,9 +210,9 @@ int buscar_entrada(unsigned int ninodo_root,
 int mi_creat(const char *camino, unsigned char permisos){
     unsigned int ninodo;
 
-    mi_waitSem(SEM_DIRECTORIOS);
+    mi_waitSem();
     int resultado = buscar_entrada(0, camino, &ninodo, 1, permisos, NULL, NULL);
-    mi_signalSem(SEM_DIRECTORIOS);
+    mi_signalSem();
 
     return resultado;
 }
@@ -333,32 +321,29 @@ int mi_link(const char *camino1, const char *camino2){
 
     resultado = buscar_entrada(0, camino1, &ninodo_fichero, 0, 0, NULL, NULL);
     if(resultado < 0){
-        mi_signalSem(SEM_DIRECTORIOS);
         return resultado;
     }
 
     // Comprobamos errores
     leer_inodo(ninodo_fichero,&inodo_fichero);
     if((inodo_fichero.permisos & 2) != 2) /* r */{
-        mi_signalSem(SEM_DIRECTORIOS);
         fprintf(stderr,"El fichero '%s' no tiene permisos de lectura.\n",camino1);
         return PERMISOS_INSUFICIENTES;
     }
     if(inodo_fichero.tipo != TIPO_FICHERO){
-        mi_signalSem(SEM_DIRECTORIOS);
         fprintf(stderr,"%s no es un fichero!\n",camino1);
         return NO_ES_FICHERO;
     }
 
-    mi_waitSem(SEM_DIRECTORIOS);
+    mi_waitSem();
     resultado = buscar_entrada(0, camino2, &ninodo_enlace, 1, 7, &ninodo_dir, &nentrada);
     if(resultado < 0){
-        mi_signalSem(SEM_DIRECTORIOS);
+        mi_signalSem();
         return resultado;
     }
 
     liberar_inodo(ninodo_enlace);
-    mi_signalSem(SEM_DIRECTORIOS);
+    mi_signalSem();
 
     // Actualizamos entrada
     leer_inodo(ninodo_dir,&inodo_dir);
@@ -374,14 +359,15 @@ int mi_link(const char *camino1, const char *camino2){
     mi_write_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
 
     // Actualizamos info inodo_fichero
-    mi_waitSem(SEM_DIRECTORIOS);
+    mi_waitSem();
+
     //fprintf(stderr,"Actualizamos datos del ninodo %u\n", ninodo_fichero);
     leer_inodo(ninodo_fichero, &inodo_fichero);
     ++inodo_fichero.nlinks;
     inodo_fichero.ctime = time(NULL);
     escribir_inodo(inodo_fichero, ninodo_fichero);
 
-    mi_signalSem(SEM_DIRECTORIOS);
+    mi_signalSem();
     return 0;
 }
 
@@ -392,7 +378,6 @@ int mi_unlink(const char *camino){
 
     resultado = buscar_entrada(0, camino, &ninodo, 0, 0, &ninodo_dir, &nentrada);
     if(resultado < 0){
-        mi_signalSem(SEM_DIRECTORIOS);
         return resultado;
     }
 
@@ -400,7 +385,6 @@ int mi_unlink(const char *camino){
     leer_inodo(ninodo_dir, &inodo_dir);
 
     if(inodo.tipo == TIPO_DIRECTORIO && inodo.tamEnBytesLog > 0){
-        mi_signalSem(SEM_DIRECTORIOS);
         fprintf(stderr,"No es posible borrar la entrada '%u' porque es un directorio no vacio.\n",nentrada);
         return IMPOSIBLE_BORRAR_ENTRADA;
     }
@@ -414,7 +398,6 @@ int mi_unlink(const char *camino){
 
         resultado = mi_read_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
         if(resultado < 0){
-            mi_signalSem(SEM_DIRECTORIOS);
             return resultado;
         }
 
@@ -422,11 +405,10 @@ int mi_unlink(const char *camino){
 
         resultado = mi_write_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
         if(resultado < 0){
-            mi_signalSem(SEM_DIRECTORIOS);
             return resultado;
         }
     }
-    mi_waitSem(SEM_DIRECTORIOS);
+    mi_waitSem();
     mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
 
     --inodo.nlinks;
@@ -439,7 +421,7 @@ int mi_unlink(const char *camino){
         escribir_inodo(inodo, ninodo);
     }
 
-    mi_signalSem(SEM_DIRECTORIOS);
+    mi_signalSem();
 
     return 0;
 }
@@ -473,14 +455,12 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
     unsigned int ninodo;
     int resultado;
 
-    mi_waitSem(SEM_DIRECTORIOS);
     char hit = buscar_entrada_en_cache(camino, &ninodo, &cache_read);
     if(!hit){
         resultado = buscar_entrada(0, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
         actualizar_cache(camino, ninodo, &cache_read);
     }
-    mi_signalSem(SEM_DIRECTORIOS);
 
     leer_inodo(ninodo,&inodo);
     if(inodo.tipo != TIPO_FICHERO){
@@ -497,15 +477,12 @@ int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned 
     inodo_t inodo;
     int resultado;
 
-    mi_waitSem(SEM_DIRECTORIOS);
     char hit = buscar_entrada_en_cache(camino,&ninodo, &cache_write);
     if(!hit){
         resultado = buscar_entrada(0, camino, &ninodo, 0, 0, NULL, NULL);
         if(resultado < 0) return resultado;
         actualizar_cache(camino, ninodo, &cache_write);
-
     }
-    mi_signalSem(SEM_DIRECTORIOS);
 
     leer_inodo(ninodo,&inodo);
     if(inodo.tipo != TIPO_FICHERO){

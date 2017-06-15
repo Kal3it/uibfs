@@ -38,11 +38,11 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
             lByteRelativo = lastByte % BLOCKSIZE,
             bytesEscritos = 0;
 
-    mi_waitSem(SEM_FICHEROS);
+    mi_waitSem();
     int
             ptrFirstBloque = traducir_bloque_inodo(ninodo, firstBloqueLogico, 1),
             ptrLastBloque = traducir_bloque_inodo(ninodo, lastBloqueLogico, 1);
-    mi_signalSem(SEM_FICHEROS);
+    mi_signalSem();
 
     if(ptrFirstBloque == NO_QUEDAN_BLOQUES_LIBRES || ptrLastBloque == NO_QUEDAN_BLOQUES_LIBRES){
         exit(NO_QUEDAN_BLOQUES_LIBRES);
@@ -68,9 +68,9 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
             // Escribimos sobre los del medio
             for (int i = firstBloqueLogico+1; i <= lastBloqueLogico-1; ++i) {
                 //fprintf(stderr,"Bloque intermedio (%u): En el bloque %u desde la posicion del buffer_original %u, escribimos desde la posicion del buffer %u hasta la %u\n",i, traducir_bloque_inodo(ninodo,i,1), bytesEscritos, 0, BLOCKSIZE-1);
-                mi_waitSem(SEM_FICHEROS);
+                mi_waitSem();
                 int ptrBloque = traducir_bloque_inodo(ninodo,i,1);
-                mi_signalSem(SEM_FICHEROS);
+                mi_signalSem();
                 if(ptrBloque == NO_QUEDAN_BLOQUES_LIBRES){
                     exit(NO_QUEDAN_BLOQUES_LIBRES);
                 }
@@ -87,7 +87,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
             break;
     }
 
-    mi_waitSem(SEM_FICHEROS);
+    mi_waitSem();
     leer_inodo(ninodo, &inodo); // Leemos el inodo actualizado (es posible que se hayan actualizado los punteros a bloques)
 
     if(lastByte+1 > inodo.tamEnBytesLog){
@@ -97,7 +97,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 
     inodo.mtime = time(NULL);
     escribir_inodo(inodo,ninodo);
-    mi_signalSem(SEM_FICHEROS);
+    mi_signalSem();
 
     return bytesEscritos;
 }
@@ -105,11 +105,11 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
 int mi_read_f(unsigned int ninodo, void *buf_original, unsigned int offset, unsigned int nbytes){
     inodo_t inodo;
 
-    mi_waitSem(SEM_FICHEROS);
+    mi_waitSem();
     leer_inodo(ninodo, &inodo);
     inodo.atime = time(NULL);
     escribir_inodo(inodo,ninodo);
-    mi_signalSem(SEM_FICHEROS);
+    mi_signalSem();
 
     if(!tiene_permiso(inodo.permisos, 'r')){
         fprintf(stderr,"Este inodo no tiene permisos de lectura.\n");
@@ -198,7 +198,7 @@ int mi_stat_f(unsigned int ninodo, stat_t *p_stat){
 }
 
 int mi_chmod_f(unsigned int ninodo, unsigned char permisos){
-    mi_waitSem(SEM_FICHEROS);
+    mi_waitSem();
 
     if(permisos > ((char) 7)){
         fprintf(stderr,"El valor %u no se corresponde a ninguna combinacion de permisos.\n",permisos);
@@ -211,12 +211,12 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos){
     inodo.ctime = time(NULL);
     escribir_inodo(inodo, ninodo);
 
-    mi_signalSem(SEM_FICHEROS);
+    mi_signalSem();
     return 0;
 }
 
 int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
-    mi_waitSem(SEM_FICHEROS);
+    mi_waitSem();
     inodo_t inodo;
     leer_inodo(ninodo, &inodo);
 
@@ -240,6 +240,6 @@ int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
     inodo.tamEnBytesLog = nbytes;
     escribir_inodo(inodo, ninodo);
 
-    mi_signalSem(SEM_DIRECTORIOS);
+    mi_signalSem();
     return 0;
 }
