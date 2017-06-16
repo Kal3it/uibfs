@@ -44,21 +44,25 @@ int main(int argc, char const *argv[]) {
         exit(-1);
     }
 
+    unsigned int offset, num_registros_validos;
+    char fichero_registros[strlen(camino)+30];
+    struct registro primera_escritura, ultima_escritura, mayor_pos, menor_pos;
+    unsigned int
+            numEntradas = 500 * (BLOCKSIZE / sizeof(struct registro)),
+            tamBuffer = numEntradas * sizeof(struct registro);
+    struct registro buffer_registros[numEntradas];
+
     for (int n_fichero_proceso = 0; n_fichero_proceso < NUM_ENTRADAS_PROCESOS; ++n_fichero_proceso) {
-        char fichero_registros[strlen(camino)+strlen(buffer_entradas[n_fichero_proceso].nombre)+10];
 
         char *ptr_pid = strchr(buffer_entradas[n_fichero_proceso].nombre,'_'); //extraemos el pid del nombre de la entrada
         pid_t pid = atoi(ptr_pid+1);
 
         sprintf(fichero_registros, "%s%s/prueba.dat", camino, buffer_entradas[n_fichero_proceso].nombre);
 
-        struct registro primera_escritura, ultima_escritura, mayor_pos, menor_pos;
+        offset = 0;
+        num_registros_validos = 0;
 
-        unsigned int tamBuffer = 500 * sizeof(struct registro);
-        unsigned int offset = 0, num_registros_validos = 0;
-        struct registro buffer_registros[tamBuffer/ sizeof(struct registro)];
         memset(buffer_registros,0,tamBuffer);
-
         int respuesta = mi_read(fichero_registros, buffer_registros, offset, tamBuffer);
 
         while(respuesta > 0){

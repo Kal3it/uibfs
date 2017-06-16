@@ -87,7 +87,7 @@ char buscar_entrada_en_cache(const char *camino, unsigned int *ninodo, cache_t *
 
 char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsigned int *ninodo, unsigned int *ultima_entrada_leida){
     unsigned int
-            max_entradas = 5,
+            max_entradas = BLOCKSIZE / sizeof(entrada_t),
             offset = 0,
             tamBuffer = max_entradas * sizeof(entrada_t),
             numEntrada = 0,
@@ -96,20 +96,21 @@ char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsig
     entrada_t entradas[max_entradas];
     int respuesta = 0;
     char existeEntrada = 0;
+    *ultima_entrada_leida = -1;
 
     respuesta = mi_read_f(ninodo_dir, entradas, offset, tamBuffer);
-    *ultima_entrada_leida = -1;
-    while (respuesta > 0){
+    while (respuesta > 0 && !existeEntrada){
 
         entradas_leidas = respuesta / sizeof(entrada_t);
         for(numEntrada = 0; numEntrada < entradas_leidas && !existeEntrada; ++numEntrada) {
             existeEntrada = !strcmp(entradas[numEntrada].nombre, str_entrada);
             ++(*ultima_entrada_leida);
         }
-        if(existeEntrada) break;
 
-        offset += (max_entradas * sizeof(entrada_t));
-        respuesta = mi_read_f(ninodo_dir, entradas, offset, tamBuffer);
+        if(!existeEntrada){
+            offset += tamBuffer;
+            respuesta = mi_read_f(ninodo_dir, entradas, offset, tamBuffer);
+        }
     }
 
     if(existeEntrada) *ninodo = entradas[numEntrada-1].ninodo;
@@ -347,21 +348,20 @@ int mi_link(const char *camino1, const char *camino2){
 
     // Actualizamos entrada
     leer_inodo(ninodo_dir,&inodo_dir);
-    entrada_t bufferEntradas[inodo_dir.tamEnBytesLog / sizeof(entrada_t)];
+    entrada_t nuevaEntrada;
+    unsigned int offsetNuevaEntrada = nentrada * sizeof(entrada_t);
 
-    resultado = mi_read_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
-    if(resultado < 0){
-        return resultado;
-    }
+    resultado = mi_read_f(ninodo_dir, &nuevaEntrada, offsetNuevaEntrada, sizeof(entrada_t));
+    if(resultado < 0) return resultado;
 
-    bufferEntradas[nentrada].ninodo = ninodo_fichero;
-    //fprintf(stderr,"bufferEntradas[%u].ninodo = %u\n",nentrada,bufferEntradas[nentrada].ninodo);
-    mi_write_f(ninodo_dir, bufferEntradas, 0, inodo_dir.tamEnBytesLog);
+    nuevaEntrada.ninodo = ninodo_fichero;
+
+    resultado = mi_write_f(ninodo_dir, &nuevaEntrada, offsetNuevaEntrada, sizeof(entrada_t));
+    if(resultado < 0) return resultado;
 
     // Actualizamos info inodo_fichero
     mi_waitSem();
 
-    //fprintf(stderr,"Actualizamos datos del ninodo %u\n", ninodo_fichero);
     leer_inodo(ninodo_fichero, &inodo_fichero);
     ++inodo_fichero.nlinks;
     inodo_fichero.ctime = time(NULL);
@@ -385,7 +385,7 @@ int mi_unlink(const char *camino){
     leer_inodo(ninodo_dir, &inodo_dir);
 
     if(inodo.tipo == TIPO_DIRECTORIO && inodo.tamEnBytesLog > 0){
-        fprintf(stderr,"No es posible borrar la entrada '%u' porque es un directorio no vacio.\n",nentrada);
+        fprintf(stderr,"No es posible borrar la entrada '%s' porque es un directorio no vacio.\n",camino);
         return IMPOSIBLE_BORRAR_ENTRADA;
     }
 
@@ -394,21 +394,24 @@ int mi_unlink(const char *camino){
     int esUltimaEntrada = (nentrada == nentradas_inodo_dir-1);
     if (!esUltimaEntrada)
     {
-        entrada_t bufferEntradas[nentradas_inodo_dir];
+        entrada_t ultima_entrada;
+        unsigned int
+                offset_entrada_a_borrar = nentrada * sizeof(entrada_t),
+                offset_ultima_entrada = inodo_dir.tamEnBytesLog - sizeof(entrada_t);
 
-        resultado = mi_read_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
+        resultado = mi_read_f(ninodo_dir, &ultima_entrada, offset_ultima_entrada, sizeof(entrada_t));
         if(resultado < 0){
             return resultado;
         }
 
-        bufferEntradas[nentrada] = bufferEntradas[nentradas_inodo_dir-1];
-
-        resultado = mi_write_f(ninodo_dir,bufferEntradas,0,inodo_dir.tamEnBytesLog);
+        resultado = mi_write_f(ninodo_dir, &ultima_entrada, offset_entrada_a_borrar, sizeof(entrada_t));
         if(resultado < 0){
             return resultado;
         }
     }
+
     mi_waitSem();
+
     mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
 
     --inodo.nlinks;
@@ -472,6 +475,7 @@ int mi_read(const char *camino, void *buf, unsigned int offset, unsigned int nby
 
     return resultado;
 }
+
 int mi_write(const char *camino, const void *buf, unsigned int offset, unsigned int nbytes){
     unsigned int ninodo;
     inodo_t inodo;
