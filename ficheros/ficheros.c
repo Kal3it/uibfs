@@ -45,7 +45,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
     mi_signalSem();
 
     if(ptrFirstBloque == NO_QUEDAN_BLOQUES_LIBRES || ptrLastBloque == NO_QUEDAN_BLOQUES_LIBRES){
-        exit(NO_QUEDAN_BLOQUES_LIBRES);
+        return NO_QUEDAN_BLOQUES_LIBRES;
     }
 
     switch (firstBloqueLogico - lastBloqueLogico){
@@ -72,7 +72,7 @@ int mi_write_f(unsigned int ninodo, const void *buf_original, unsigned int offse
                 int ptrBloque = traducir_bloque_inodo(ninodo,i,1);
                 mi_signalSem();
                 if(ptrBloque == NO_QUEDAN_BLOQUES_LIBRES){
-                    exit(NO_QUEDAN_BLOQUES_LIBRES);
+                    return NO_QUEDAN_BLOQUES_LIBRES;
                 }
                 bwrite(ptrBloque,buf_original+bytesEscritos);
                 bytesEscritos += BLOCKSIZE;
@@ -202,6 +202,7 @@ int mi_chmod_f(unsigned int ninodo, unsigned char permisos){
 
     if(permisos > ((char) 7)){
         fprintf(stderr,"El valor %u no se corresponde a ninguna combinacion de permisos.\n",permisos);
+        mi_signalSem();
         return PERMISOS_INVALIDOS;
     }
 
@@ -227,7 +228,7 @@ int mi_truncar_f(unsigned int ninodo, unsigned int nbytes) {
 
     if (inodo.tamEnBytesLog == 0 || nbytes > inodo.tamEnBytesLog-1) {
         fprintf(stderr, "El byte a partir del cual se quiere truncar (%u) es superior al ultimo byte escrito del inodo (%d).\n", nbytes, inodo.tamEnBytesLog-1);
-        exit(ACCESO_FUERA_DE_RANGO);
+        return ACCESO_FUERA_DE_RANGO;
     }
 
     unsigned int primerBlogico = nbytes % BLOCKSIZE ? (nbytes / BLOCKSIZE) + 1 : (nbytes / BLOCKSIZE);

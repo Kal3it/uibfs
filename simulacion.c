@@ -20,7 +20,7 @@ int write_randomly(char *filepath){
     reg.pid = getpid();
     srand(time(NULL)+reg.pid);
 
-    for (int i = 0; i < 50; ++i) {
+    for (int i = 1; i <= 50; ++i) {
         reg.nEscritura = i;
         reg.time = time(NULL);
         reg.posicion=(rand()%POS_MAX)* sizeof(struct registro); // multiplo de sizeof(registro)

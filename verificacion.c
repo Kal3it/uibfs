@@ -48,7 +48,7 @@ int main(int argc, char const *argv[]) {
     char fichero_registros[strlen(camino)+30];
     struct registro primera_escritura, ultima_escritura, mayor_pos, menor_pos;
     unsigned int
-            numEntradas = 500 * (BLOCKSIZE / sizeof(struct registro)),
+            numEntradas = 256,
             tamBuffer = numEntradas * sizeof(struct registro);
     struct registro buffer_registros[numEntradas];
 
@@ -105,28 +105,9 @@ int main(int argc, char const *argv[]) {
         *buffer = '\0';
         *bufferAux = '\0';
 
-        // Impresion por pantalla
-        sprintf(bufferAux,"-----------Proceso %u------------ \n",pid);
-        write(1,bufferAux,strlen(bufferAux));
-
-        write(1,"Primera escritura: ",strlen("Primera escritura: "));
-        imprimirRegistro(primera_escritura);
-
-        write(1,"Ultima escritura: ",strlen("Ultima escritura: "));
-        imprimirRegistro(ultima_escritura);
-
-        write(1,"Mayor Posicion: ",strlen("Mayor Posicion: "));
-        imprimirRegistro(mayor_pos);
-
-        write(1,"Menor Posicion: ",strlen("Menor Posicion: "));
-        imprimirRegistro(menor_pos);
-
-        sprintf(bufferAux,"Numero de registros validos: %u\n", num_registros_validos);
-        write(1,bufferAux,strlen(bufferAux));
-        write(1,"--------------------------",strlen("--------------------------"));
-        write(1,"\n",strlen("\n"));
-
-        // Impresion en informe.txt
+	printf("%u escrituras validadas en %s\n",num_registros_validos,fichero_registros);
+        
+	// Impresion en informe.txt
 
         sprintf(bufferAux, "-----------Proceso %u------------ \n", pid);
         strcat(buffer,bufferAux);

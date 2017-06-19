@@ -8,7 +8,9 @@ int bmount (const char *camino){
 		close(descriptor);
 	}
 	if ((descriptor = open(camino, O_RDWR|O_CREAT, 0666)) == -1) {
-		fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));}
+		fprintf(stderr, "Error %d: %s\n", errno, strerror(errno));
+		exit(-1);
+	}
 	if (!mutex) {
 		mutex = initSem();
 		if (mutex == SEM_FAILED) {

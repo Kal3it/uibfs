@@ -22,7 +22,6 @@ int main(int argc, char const *argv[]){
         memset(buffer,0,tamBuffer);
         respuesta = mi_read(camino, buffer, offset, tamBuffer);
     }
-    write(1,"\n",1);
 
     char infobuff[100];
     sprintf(infobuff,"%d bytes leidos\n",bytesLeidos);

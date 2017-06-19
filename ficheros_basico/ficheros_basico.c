@@ -260,8 +260,10 @@ int reservar_inodo(unsigned char tipo, unsigned char permisos) {
 
     if (sb.cantInodosLibres == 0) {
         fprintf(stderr, "No quedan inodos libres.\n");
-        exit(NO_QUEDAN_INODOS_LIBRES);
+        return NO_QUEDAN_INODOS_LIBRES;
     }
+
+    // todo Debugging
     if(permisos > ((unsigned int) 7)){
         fprintf(stderr, "El valor para permisos '%u' es invalido.\n",permisos);
         exit(PERMISOS_INVALIDOS);
@@ -375,11 +377,7 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros){
             return (nblogico - INDIRECTOS0) / NPUNTEROS;
         } else if (nivel_punteros == 1){
             return (nblogico - INDIRECTOS0) % NPUNTEROS;
-        } else {
-            fprintf(stderr,"Erroraco amigo");
-            exit(-1);
         }
-
     }
     else if (nblogico < INDIRECTOS2){
 
@@ -389,15 +387,10 @@ int obtener_indice(unsigned int nblogico, int nivel_punteros){
             return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) / NPUNTEROS;
         } else if (nivel_punteros == 1){
             return ((nblogico - INDIRECTOS1) % (NPUNTEROS * NPUNTEROS)) % NPUNTEROS;
-        } else {
-            fprintf(stderr,"Erroraco amigo");
-            exit(-1);
         }
-
-    } else {
-        fprintf(stderr,"Erroraco amigo");
-        exit(-1);
     }
+
+    exit(-1);
 }
 
 int indireccionar(unsigned int *ptrBloqueIndice, int indirecciones_restantes, inodo_t * inodo, unsigned  int nblogico, char reservar){
@@ -514,6 +507,7 @@ int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_r
 
         if(!memcmp(bufferCeros, bufferBloqueIndice, NPUNTEROS * sizeof(unsigned int))){
             liberar_bloque(*ptrBloqueIndice);
+            //printf("Liberando bloque indice %u para BL %u\n",*ptrBloqueIndice,nblogico);
             *ptrBloqueIndice = 0;
 
             --inodo->numBloquesOcupados;
@@ -524,6 +518,7 @@ int liberar_bloques_recursivo(unsigned int *ptrBloqueIndice, int indirecciones_r
 
         if(*ptrBloqueIndice != 0) {
             liberar_bloque(*ptrBloqueIndice);
+            //printf("Liberando bloque datos %u para BL %u\n",*ptrBloqueIndice,nblogico);
             *ptrBloqueIndice = 0;
 
             --inodo->numBloquesOcupados;

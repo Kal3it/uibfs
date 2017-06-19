@@ -118,18 +118,27 @@ char buscar_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, unsig
     return existeEntrada;
 }
 
-void crear_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, char tipo, char permisos, unsigned int *nuevo_ninodo){
+int crear_entrada_directorio(unsigned int ninodo_dir, char *str_entrada, char tipo, char permisos, unsigned int *nuevo_ninodo){
     inodo_t inodo;
     leer_inodo(ninodo_dir, &inodo);
+    int respuesta;
 
     entrada_t nueva_entrada;
     unsigned int offset = inodo.tamEnBytesLog;
 
     strcpy(nueva_entrada.nombre, str_entrada);
     nueva_entrada.ninodo = reservar_inodo(tipo, permisos);
+
+    if((int) nueva_entrada.ninodo < 0){
+        return NO_QUEDAN_INODOS_LIBRES;
+    }
+
     *nuevo_ninodo = nueva_entrada.ninodo;
 
-    mi_write_f(ninodo_dir,&nueva_entrada,offset,sizeof(entrada_t));
+    respuesta = mi_write_f(ninodo_dir,&nueva_entrada,offset,sizeof(entrada_t));
+    if(respuesta < 0) return respuesta;
+
+    return 0;
 }
 
 /**
@@ -185,7 +194,9 @@ int buscar_entrada(unsigned int ninodo_root,
 
         if(!existeEntrada){
             if(reservar && strcmp(subdir,"/") == 0){ // Si reservar y es la ultima entrada, creamos entrada
-                crear_entrada_directorio(ninodo_root, dir, tipo, permisos, &next_ninodo);
+                if(crear_entrada_directorio(ninodo_root, dir, tipo, permisos, &next_ninodo) < 0){
+                    return -1;
+                }
             } else {
                 fprintf(stderr,"El fichero o directorio '%s' no existe.\n",dir);
                 return NO_EXISTE_ENTRADA;
@@ -412,7 +423,11 @@ int mi_unlink(const char *camino){
 
     mi_waitSem();
 
-    mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
+    resultado = mi_truncar_f(ninodo_dir,(nentradas_inodo_dir-1)*sizeof(struct entrada));
+    if(resultado < 0){
+        mi_signalSem();
+        return -1;
+    }
 
     --inodo.nlinks;
     if (inodo.nlinks == 0) {
